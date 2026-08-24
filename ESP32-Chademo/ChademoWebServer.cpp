@@ -1,7 +1,8 @@
 #include "ChademoWebServer.h"
+#include <WiFi.h>
 #include <SPIFFS.h>
 #include <EEPROM.h>
-#include <AsyncElegantOTA.h>;
+#include <ElegantOTA.h>
 
 
 AsyncWebServer server(80);
@@ -16,6 +17,7 @@ AsyncWebSocket& ChademoWebServer::getWebSocket() {
 }
 void ChademoWebServer::execute() {
     ws.cleanupClients();
+    ElegantOTA.loop();
 }
 
 void ChademoWebServer::broadcast(const char * message) {
@@ -116,7 +118,7 @@ void ChademoWebServer::setup()
 
   // Start server
   Serial.println("Starting Web Server");
-  AsyncElegantOTA.begin(&server);
+  ElegantOTA.begin(&server);
   server.begin();
 }
 
