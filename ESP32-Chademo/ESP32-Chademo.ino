@@ -8,6 +8,10 @@
 #include <EEPROM.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
+#ifdef DISABLE_BROWNOUT
+#include <soc/soc.h>
+#include <soc/rtc_cntl_reg.h>
+#endif
 
 #define LED_PIN 2
 #define HOSTNAME "ESP32-Chademo"
@@ -82,7 +86,13 @@ void setup() {
   delay(4000);
 
   Serial.println("ESP32-CHADEMO");
-  
+#ifdef DISABLE_BROWNOUT
+  //Bench builds only: an undervolted ESP32 keeps running with undefined outputs, which is the last
+  //thing a board driving contactors should do. Never flash this into anything wired to a charger.
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+  Serial.println("BENCH BUILD: brownout detector disabled, do not use on a charger");
+#endif
+
   pinMode(CHADEMO_IN2, INPUT);
   pinMode(CHADEMO_IN1, INPUT);
   pinMode(CHADEMO_OUT1, OUTPUT);
