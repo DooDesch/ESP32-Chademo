@@ -131,25 +131,6 @@ function initHandlers() {
 		xhr.send({body:"void"})
 	});
 
-	var initShunt = document.getElementById('initShunt')
-	initShunt.addEventListener('click', function() {
-		const xhr = new XMLHttpRequest();
-
-		// listen for `load` event
-		xhr.onload = () => {
-
-			// print JSON response
-			if (xhr.status >= 200 && xhr.status < 300) {
-				// parse JSON
-
-			}
-		};
-
-		xhr.open('POST', '/init');
-		xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-		xhr.send({body:"void"})
-	});
-
 
 }
 

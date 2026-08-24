@@ -1,19 +1,18 @@
 #include "Globals.h"
 #include "Chademo.h"
-#include "ISAShunt.h"
 #include "ChademoWebServer.h"
 #include "WebSocketPrint.h"
 
 #include <SPIFFS.h>
 #include <ACAN_ESP32.h>
-#include <ACAN2515.h>
-#include <SPI.h>
 #include <EEPROM.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 
 #define LED_PIN 2
 #define HOSTNAME "ESP32-Chademo"
+#define AP_SSID "ESP32-CHADEMO"
+#define AP_PASSWORD "ChadMeO1"
 
 const unsigned long Interval = 10;
 unsigned long Time = 0;
@@ -29,10 +28,7 @@ int socketMessage = 0;
 uint8_t soc;
 extern bool overrideStart1 = false;
 extern bool overrideStart2 = false;
-extern bool initShunt = false;
 
-ISA Sensor;
-ACAN2515 can1 (MCP2515_CS, SPI, MCP2515_INT) ;
 EESettings settings;
 ChademoWebServer chademoWebServer(settings);
 WebSocketPrint wsPrint(chademoWebServer.getWebSocket());
@@ -107,13 +103,6 @@ void setup() {
     Serial.print ("Can0 Configuration error 0x") ;
     Serial.println (errorCode, HEX) ;
   }
-  SPI.begin(MCP2515_SCK, MCP2515_MISO, MCP2515_MOSI, MCP2515_CS) ;
-  ACAN2515Settings settings2515 (MCP2515_QUARTZ_FREQUENCY, CAN_BAUD);
-  errorCode = can1.begin(settings2515, [] { can1.isr () ; });
-  if (errorCode > 0) {
-    Serial.print ("Can1 Configuration error 0x") ;
-    Serial.println (errorCode, HEX) ;
-  }
   EEPROM.begin(sizeof(settings));
   EEPROM.get(0, settings);
 
@@ -143,7 +132,9 @@ void setup() {
 
   WiFi.mode(WIFI_AP);
   WiFi.hostname(HOSTNAME);
-  WiFi.begin("ESP32-CHADEMO", "ChadMeO");
+  WiFi.softAP(AP_SSID, AP_PASSWORD);
+  Serial.print(F("AP IP: "));
+  Serial.println(WiFi.softAPIP());
 
   chademoWebServer.setup();
 
@@ -176,101 +167,6 @@ void Save()
   Serial.println (F("SAVED"));
   interrupts();
   delay(1000);
-}
-
-void initaliseShunt() 
-{
-  CANMessage outframe;
-
-  outframe.id = 0x411;      // Set our transmission address ID
-  outframe.len = 8;       // Data payload 8 bytes
-  outframe.data[0]=0x34;
-  outframe.data[1]=0x00;  
-  outframe.data[2]=0x01;
-  outframe.data[3]=0x00;
-  outframe.data[4]=0x00;
-  outframe.data[5]=0x00;
-  outframe.data[6]=0x00;
-  outframe.data[7]=0x00;
-  bool sent = can1.tryToSend(outframe);
-
-	delay(700);
-	for(int i=0;i<9;i++)
-	{
-
-	
-    outframe.id = 0x411;      // Set our transmission address ID
-    outframe.len = 8;       // Data payload 8 bytes
-    outframe.data[0]=(0x20+i);
-    outframe.data[1]=0x42;  
-    outframe.data[2]=0x00;
-    outframe.data[3]=(0x60+(i*18));
-    outframe.data[4]=0x00;
-    outframe.data[5]=0x00;
-    outframe.data[6]=0x00;
-    outframe.data[7]=0x00;
-
-    can1.tryToSend(outframe);
-
-    delay(500);
-
-    outframe.id = 0x411;      // Set our transmission address ID
-    outframe.len = 8;       // Data payload 8 bytes
-    outframe.data[0]=0x32;
-    outframe.data[1]=0x00;  
-    outframe.data[2]=0x00;
-    outframe.data[3]=0x00;
-    outframe.data[4]=0x00;
-    outframe.data[5]=0x00;
-    outframe.data[6]=0x00;
-    outframe.data[7]=0x00;
-    can1.tryToSend(outframe);
-
-    delay(500);
-  }
-
-  outframe.id = 0x411;      // Set our transmission address ID
-  outframe.len = 8;       // Data payload 8 bytes
-  outframe.data[0]=0x34;
-  outframe.data[1]=0x01;  
-  outframe.data[2]=0x01;
-  outframe.data[3]=0x00;
-  outframe.data[4]=0x00;
-  outframe.data[5]=0x00;
-  outframe.data[6]=0x00;
-  outframe.data[7]=0x00;
-  can1.tryToSend(outframe);
-
-  initShunt = false;                 
-
-  const char * message = "Shunt Init Complete";
-  chademoWebServer.getWebSocket().textAll(message, strlen(message));
-
-}
-
-void sendStatusToVCU()
-{
-  CANMessage outFrame;
-  outFrame.id = 0x354;
-  outFrame.len = 8;
-
-  outFrame.data[0] = 0x01; //Tell VCU Chademo Active
-  outFrame.data[1] = chademo.getState();
-  outFrame.data[2] = chademo.getEVSEStatus().presentCurrent;
-  outFrame.data[3] = chademo.getEVSEStatus().presentVoltage;
-  outFrame.data[4] = 0; //not used
-  outFrame.data[5] = 0; //not used
-  outFrame.data[6] = 0; //not used
-  outFrame.data[7] = 0; //not used
-  bool sent = can1.tryToSend(outFrame);
-  if (settings.debuggingLevel > 1)
-  {
-    Serial.print(F("CAR: VCU Wake Up: "));
-    Serial.println(sent);
-
-    timestamp();
-  }
-
 }
 
 void timestamp()
@@ -531,10 +427,10 @@ void broadcastMessage() {
   char buffer[1024]; // create temp buffer
   switch(socketMessage) {
     case 0: {
-      json["voltage"] = Sensor.Voltage;
-      json["amperage"] = Sensor.Amperes;
-      json["power"] = Sensor.KW;
-      json["ampHours"] = Sensor.AH;
+      json["voltage"] = Voltage;
+      json["amperage"] = Current;
+      json["power"] = Power;
+      json["ampHours"] = settings.ampHours;
       json["soc"] = soc;
 
       size_t len = serializeJson(json, buffer);  // serialize to buffe
@@ -592,14 +488,16 @@ void loop() {
     PreviousMillis = CurrentMillis;
 
     Count++;
-    Voltage = Sensor.Voltage;
-    Current = Sensor.Amperes;
-    settings.ampHours = Sensor.AH;
-    Power = Sensor.KW;
+    //There is no shunt in this build, so the EVSE reported values are the only source.
+    //Sign follows the shunt convention the state machine expects: negative while charging.
+    Voltage = chademo.getEVSEStatus().presentVoltage;
+    Current = chademo.getEVSEStatus().presentCurrent * -1.0;
+    Power = Voltage * Current / 1000.0;
 
     //Count down kiloWattHours when drawing current.
     //Count up when charging (Current/Power is negative)
-    settings.kiloWattHours = Sensor.KWH;
+    settings.ampHours += Current * Time / 3600000.0;
+    settings.kiloWattHours -= Power * Time / 3600000.0;
 
     chademo.doProcessing();
 
@@ -608,10 +506,6 @@ void loop() {
       digitalWrite(LED_PIN, !digitalRead(LED_PIN));
       Count = 0;
       SerialCommand();
-      sendStatusToVCU();
-      if (initShunt) {
-        initaliseShunt();
-      }
       broadcastMessage();
 
       if (print8Val > 0)
@@ -631,46 +525,5 @@ void loop() {
   }
   if (ACAN_ESP32::can.receive(inFrame)) {
     chademo.handleCANFrame(inFrame);
-  }
-  if (can1.receive(inFrame)) {
-    Sensor.handleCANFrame(inFrame);
-    if (settings.useBms) {
-        if (inFrame.id == 0x355) {
-           soc = (inFrame.data[1] << 8) + inFrame.data[0];
-           chademo.setStateOfCharge(soc);
-        } else if (inFrame.id == 0x35A) { 
-          
-//          //alarms
-//          if (inFrame.data[0] & 0x4 == 0x4  && chademo.carStatus.battOverVolt == 0) {
-//            //overvoltage
-//            chademo.carStatus.battOverVolt = 1;
-//            wsPrint.message(F("BMS Over Voltage Error"));
-//
-//          }
-//          if (inFrame.data[0] & 0x40 == 0x40 && chademo.carStatus.battOverTemp == 0) {
-//            //over temperature
-//            chademo.carStatus.battOverTemp = 1;
-//            wsPrint.message(F("BMS Over Temperature Error"));
-//
-//          }
-//
-//          //temperature de-rate
-//          if (inFrame.data[4] & 0x40 == 0x40 && chademo.carStatus.derated == 0) {
-//            wsPrint.message(F("BMS temperature Derate"));
-//            chademo.setTargetAmperage(settings.maxChargeAmperage/2);
-//            chademo.carStatus.derated = 1;
-//          }
-//
-//          //voltage de-rate
-//          if (inFrame.data[4] & 0x04 == 0x04 && chademo.carStatus.derated == 0) {
-//              wsPrint.message(F("BMS Voltage Derate"));
-//              chademo.setTargetAmperage(settings.maxChargeAmperage/2);
-//              chademo.carStatus.derated = 1;
-//
-//          }
-        }
-        
-    }
-
   }
 }

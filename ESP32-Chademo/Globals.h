@@ -4,15 +4,9 @@
 #define CHADEMO_IN1 34
 #define CHADEMO_IN2 35
 
-#define CHADEMO_OUT1 32//??
-#define CHADEMO_OUT2 33//??
-
-#define MCP2515_CS 5// CS input of MCP2515
-#define MCP2515_INT 27 // INT output of MCP2515
-#define MCP2515_SCK 18
-#define MCP2515_QUARTZ_FREQUENCY 16000000
-#define MCP2515_MISO 19
-#define MCP2515_MOSI 23
+//LC-Relay-ESP32-4R-A2: RY1 drives the charge permission contact, RY2 the contactor coils
+#define CHADEMO_OUT1 32
+#define CHADEMO_OUT2 33
 
 #define CAN_BAUD 500000
 #define minimum(a, b)           (((a) < (b)) ?  (a) : (b))
@@ -50,5 +44,4 @@ extern unsigned long CurrentMillis;
 extern int Count;
 extern bool overrideStart1;
 extern bool overrideStart2;
-extern bool initShunt;
 #endif
