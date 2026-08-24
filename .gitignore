@@ -1,2 +1,5 @@
 .pio/
 .vscode/
+dist/*.bin
+dist/BUILD-COMMIT.txt
+*.zip
