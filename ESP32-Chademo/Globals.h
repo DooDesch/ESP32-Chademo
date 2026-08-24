@@ -14,9 +14,9 @@
 
 //These have been moved to eeprom. After initial compile the values will be read from EEPROM.
 //These thus set the default value to write to eeprom upon first start up
-#define MAX_CHARGE_V	158
+#define MAX_CHARGE_V	160
 #define MAX_CHARGE_A	130
-#define TARGET_CHARGE_V	160
+#define TARGET_CHARGE_V	158
 #define MIN_CHARGE_A	20
 #define CAPACITY 180
 
@@ -44,4 +44,8 @@ extern unsigned long CurrentMillis;
 extern int Count;
 extern bool overrideStart1;
 extern bool overrideStart2;
+
+//Defined in the sketch, used by the web server.
+void updateTargetAV();
+bool chargeInProgress();
 #endif

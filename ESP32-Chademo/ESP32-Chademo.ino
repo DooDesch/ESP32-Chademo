@@ -23,6 +23,8 @@ float Voltage = 0;
 float Current = 0;
 float Power = 0;
 float lastSavedAH = 0;
+double ampHourAcc = 0;
+double kiloWattHourAcc = 0;
 int Count = 0;
 int socketMessage = 0;
 uint8_t soc;
@@ -56,7 +58,7 @@ void IRAM_ATTR onTimer() {
   
   timerFastCounter++;
   timerChademoCounter++;
-  if (timerChademoCounter >= 3)
+  if (timerChademoCounter >= 4) //25ms tick, so the vehicle frames go out every 100ms
   {
     timerChademoCounter = 0;
     if (chademo.bChademoMode  && chademo.bChademoSendRequests) chademo.bChademoRequest = 1;
@@ -118,7 +120,11 @@ void setup() {
     settings.minChargeAmperage = MIN_CHARGE_A;
     settings.capacity = CAPACITY;
     settings.debuggingLevel = 1;
-    settings.currentMissmatch = true;
+    //Both mismatch checks compare the EVSE values against a copy of themselves now that the shunt
+    //is gone. They can only produce false aborts, so they start off. Over voltage abort and charge
+    //termination do not depend on this flag.
+    settings.currentMissmatch = false;
+    settings.useBms = false; //a fresh EEPROM reads back as 0xFF, which would select the removed BMS path
     Save();
   }
   //set to false on every boot.
@@ -156,6 +162,12 @@ void updateTargetAV()
   chademo.setTargetVoltage(settings.targetChargeVoltage);
 }
 
+//True from the moment the plug is detected until the sequence has ended.
+bool chargeInProgress()
+{
+  return chademo.bChademoMode != 0;
+}
+
 
 void Save()
 {
@@ -166,7 +178,6 @@ void Save()
   lastSavedAH = settings.ampHours;
   Serial.println (F("SAVED"));
   interrupts();
-  delay(1000);
 }
 
 void timestamp()
@@ -490,14 +501,31 @@ void loop() {
     Count++;
     //There is no shunt in this build, so the EVSE reported values are the only source.
     //Sign follows the shunt convention the state machine expects: negative while charging.
-    Voltage = chademo.getEVSEStatus().presentVoltage;
-    Current = chademo.getEVSEStatus().presentCurrent * -1.0;
+    if (chademo.getState() == RUNNING)
+    {
+      Voltage = chademo.getEVSEStatus().presentVoltage;
+      Current = chademo.getEVSEStatus().presentCurrent * -1.0;
+    }
+    else
+    {
+      //Outside a running session the EVSE values are stale, so nothing is counted.
+      Voltage = 0;
+      Current = 0;
+    }
     Power = Voltage * Current / 1000.0;
+
+    //Charge termination, the serial reset and the settings page all write the counters directly,
+    //so pick those values up before adding to them.
+    if (settings.ampHours != (float)ampHourAcc) ampHourAcc = settings.ampHours;
+    if (settings.kiloWattHours != (float)kiloWattHourAcc) kiloWattHourAcc = settings.kiloWattHours;
 
     //Count down kiloWattHours when drawing current.
     //Count up when charging (Current/Power is negative)
-    settings.ampHours += Current * Time / 3600000.0;
-    settings.kiloWattHours -= Power * Time / 3600000.0;
+    //Accumulated as double: a float counter at 180Ah cannot resolve a 10ms increment.
+    ampHourAcc += (double)Current * Time / 3600000.0;
+    kiloWattHourAcc -= (double)Power * Time / 3600000.0;
+    settings.ampHours = ampHourAcc;
+    settings.kiloWattHours = kiloWattHourAcc;
 
     chademo.doProcessing();
 

@@ -76,7 +76,6 @@ void CHADEMO::setBattOverTemp()
 //stuff that should be frequently run (as fast as possible)
 void CHADEMO::loop()
 {
-  static byte frameRotate;
   if (!digitalRead(CHADEMO_IN1) || overrideStart1) //IN1 goes LOW if we have been plugged into the chademo port
   {
     if (insertionTime == 0)
@@ -157,20 +156,11 @@ void CHADEMO::loop()
     if (bChademoSendRequests && bChademoRequest)
     {
       bChademoRequest = 0;
-      frameRotate++;
-      frameRotate %= 3;
-      switch (frameRotate)
-      {
-        case 0:
-          sendCANStatus();
-          break;
-        case 1:
-          sendCANBattSpecs();
-          break;
-        case 2:
-          sendCANChargingTime();
-          break;
-      }
+      //CHAdeMO expects every vehicle frame every 100ms. Rotating one frame per request stretched
+      //each ID out to 225ms, which an EVSE can treat as a communication fault.
+      sendCANStatus();
+      sendCANBattSpecs();
+      sendCANChargingTime();
     }
 
     switch (chademoState)
@@ -286,7 +276,7 @@ void CHADEMO::doProcessing()
 {
   uint8_t tempCurrVal;
 
-  if (chademoState == RUNNING && ((CurrentMillis - lastCommTime) >= lastCommTime))
+  if (chademoState == RUNNING && ((CurrentMillis - lastCommTime) >= lastCommTimeout))
   {
     //this is BAD news. We can't do the normal cease current procedure because the EVSE seems to be unresponsive.
     Serial.println(F("EVSE comm fault! Commencing emergency shutdown!"));
@@ -296,7 +286,9 @@ void CHADEMO::doProcessing()
     chademoState = OPEN_CONTACTOR;
   }
 
-  if (chademoState == RUNNING && bDoMismatchChecks)
+  //Over voltage abort and the charge termination logic must not depend on the mismatch gate:
+  //that gate is delayed by mismatchDelay and can be switched off entirely from the settings page.
+  if (chademoState == RUNNING)
   {
     if (Voltage > settings.maxChargeVoltage && !carStatus.battOverVolt)
     {
@@ -612,7 +604,10 @@ void CHADEMO::sendCANStatus()
   if(settings.useBms) {
       outFrame.data[6] = soc; //charged rate (change to 100 for use with BMS SoC)
   } else {
-      outFrame.data[6] = (uint8_t)((settings.capacity - settings.ampHours) / settings.capacity) * 100; //charged rate (change to 100 for use with BMS SoC)
+      float chargedRate = settings.capacity > 0 ? ((settings.capacity - settings.ampHours) / settings.capacity) * 100.0f : 0.0f;
+      if (chargedRate < 0.0f) chargedRate = 0.0f;
+      if (chargedRate > 100.0f) chargedRate = 100.0f;
+      outFrame.data[6] = (uint8_t)chargedRate; //charged rate (change to 100 for use with BMS SoC)
   }
   outFrame.data[7] = 0; //not used
   ACAN_ESP32::can.tryToSend(outFrame);

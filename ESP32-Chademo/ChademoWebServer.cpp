@@ -17,7 +17,11 @@ AsyncWebSocket& ChademoWebServer::getWebSocket() {
 }
 void ChademoWebServer::execute() {
     ws.cleanupClients();
-    ElegantOTA.loop();
+    //ElegantOTA reboots the board here once an upload finished. Holding that off while the
+    //contactors are closed keeps a reboot from dropping the CHAdeMO session under load.
+    if (!chargeInProgress()) {
+        ElegantOTA.loop();
+    }
 }
 
 void ChademoWebServer::broadcast(const char * message) {
@@ -82,6 +86,7 @@ void ChademoWebServer::setup()
              fromJson(settings, obj);
              EEPROM.put(0, settings);
              EEPROM.commit();
+             updateTargetAV(); //without this the new limits only take effect after a reboot
              request->send(200, "application/json", "success");
 
          } else {
