@@ -78,6 +78,10 @@ davon wäre die wichtigste Rückmeldung.
   Abweichungsprüfungen der Firmware vergleichen die Säule also mit sich selbst.
 - Kein BMS-Anschluss. Ladeschluss richtet sich allein nach den Werten auf der Settings-Seite.
 - Kein Not-Aus in Hardware, nur der Stopp-Knopf in der Weboberfläche.
+- Wer im WLAN des Boards ist, kann ohne Anmeldung die Schütze schalten und neue Firmware
+  aufspielen. Board nur einschalten, wenn du danebenstehst.
+- Ein OTA-Update startet das Board neu. Solange der CHAdeMO-Stecker erkannt ist, wird der
+  Neustart zurückgehalten.
 
 ## Dateien
 
