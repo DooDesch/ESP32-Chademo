@@ -18,9 +18,10 @@ AsyncWebSocket& ChademoWebServer::getWebSocket() {
 }
 void ChademoWebServer::execute() {
     ws.cleanupClients();
-    //ElegantOTA reboots the board here once an upload finished. Holding that off while the
-    //contactors are closed keeps a reboot from dropping the CHAdeMO session under load.
-    if (!chargeInProgress()) {
+    //ElegantOTA reboots the board here once an upload finished. Only an actually closed contactor
+    //may hold that off: gating on the whole sequence meant an armed box never rebooted and silently
+    //kept running the old firmware while every update reported success.
+    if (!diagRelayState(1)) {
         ElegantOTA.loop();
     }
 }
