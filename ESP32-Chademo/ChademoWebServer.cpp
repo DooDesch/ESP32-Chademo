@@ -152,6 +152,9 @@ void ChademoWebServer::setup()
         if (request->hasParam("on")) {
             earlyPermission = request->getParam("on")->value().toInt() != 0;
             digitalWrite(CHADEMO_OUT1, earlyPermission ? HIGH : LOW);
+            //A charger that waits for the vehicle CAN before it energises the sequence line also
+            //needs the frames to start without d1, so the sequence runs as if the plug were seen.
+            overrideStart1 = earlyPermission;
         }
         request->send(200, "application/json", "{\"ok\":true}");
     });
