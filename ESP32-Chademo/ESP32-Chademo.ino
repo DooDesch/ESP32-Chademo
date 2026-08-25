@@ -29,6 +29,7 @@ float Power = 0;
 float lastSavedAH = 0;
 double ampHourAcc = 0;
 double kiloWattHourAcc = 0;
+bool earlyPermission = false;
 uint32_t canFrames = 0;
 uint32_t canLastId = 0;
 uint32_t canLastMillis = 0;

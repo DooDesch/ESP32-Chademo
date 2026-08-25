@@ -52,6 +52,11 @@ extern bool overrideStart2;
 #define CHADEMO_OUT3 25
 #define CHADEMO_OUT4 26
 
+//Closes the permission contact before the charger puts 12V on the sequence line, for chargers
+//that will not start without seeing it. Not stored, so a power cycle always returns to the
+//standard order.
+extern bool earlyPermission;
+
 extern uint32_t canFrames;
 extern uint32_t canLastId;
 extern uint32_t canLastMillis;

@@ -83,7 +83,9 @@ void CHADEMO::loop()
       //TM - Set the outputs LOW in case they have been set
       //     outside of Chademo Mode.
       digitalWrite(CHADEMO_OUT2, LOW);
-      digitalWrite(CHADEMO_OUT1, LOW);
+      //Some chargers wait for the permission contact before they put 12V on the sequence line,
+      //so early permission has to survive this reset or the two sides wait for each other.
+      if (!earlyPermission) digitalWrite(CHADEMO_OUT1, LOW);
 
       insertionTime = millis();
     }
@@ -126,7 +128,7 @@ void CHADEMO::loop()
       //until the EVSE is ready. Also, the EVSE should have us locked so the only way the plug should come out under
       //load is if the idiot driver took off in the car. Bad move moron.
       digitalWrite(CHADEMO_OUT2, LOW);
-      digitalWrite(CHADEMO_OUT1, LOW);
+      if (!earlyPermission) digitalWrite(CHADEMO_OUT1, LOW);
       if (settings.debuggingLevel > 0)
       {
         Serial.println(F("CAR: Contactor open"));

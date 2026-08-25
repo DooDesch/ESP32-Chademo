@@ -15,6 +15,13 @@
 
 <p class="hint">Die Relais schalten sofort. RY2 zieht beide Schütze an. Nur ohne Hochspannung benutzen.</p>
 
+<h2 class="section">Ladefreigabe vorab</h2>
+<div class="row">
+	<span class="row-name">Freigabe schon vor den 12 V setzen</span>
+	<button type="button" id="early" onclick="toggleEarly()">-</button>
+</div>
+<p class="hint">Für Säulen, die ohne Freigabe keine 12 V auf die Sequenzleitung legen. Nach einem Neustart wieder aus.</p>
+
 <h2 class="section">Relais</h2>
 <div id="relays"></div>
 
@@ -70,6 +77,9 @@ function draw(s) {
 		b.disabled = s.active;
 	}
 	document.getElementById("lock").textContent = s.active ? "gesperrt, Ladung laeuft" : "frei";
+	var e = document.getElementById("early");
+	e.textContent = s.early ? "AN" : "AUS";
+	e.className = s.early ? "on" : "";
 	document.getElementById("version").textContent = s.version || "-";
 	document.getElementById("inpins").textContent = "d1 " + s.in1pin + " / d2 " + s.in2pin;
 	document.getElementById("in1label").textContent = "IN 1 (d1, GPIO" + s.in1pin + ")";
@@ -96,6 +106,11 @@ function poll() {
 	}).then(draw).catch(function () {
 		document.getElementById("lock").textContent = "Firmware zu alt, bitte firmware.bin flashen";
 	});
+}
+
+function toggleEarly() {
+	var on = document.getElementById("early").className ? 0 : 1;
+	fetch("/permission?on=" + on).then(poll);
 }
 
 function toggle(i) {

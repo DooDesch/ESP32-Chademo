@@ -131,6 +131,7 @@ void ChademoWebServer::setup()
         json += ",\"lastId\":" + String(canLastId);
         json += ",\"age\":" + String(canFrames ? millis() - canLastMillis : 0);
         json += ",\"active\":" + String(chargeInProgress() ? "true" : "false");
+        json += ",\"early\":" + String(earlyPermission ? "true" : "false");
         //Build stamp, so the page can say which firmware is actually running. Two updates were
         //already diagnosed as a wiring fault because an older binary of the same name was flashed.
         json += ",\"version\":\"" + String(__DATE__) + " " + String(__TIME__) + "\"";
@@ -145,6 +146,14 @@ void ChademoWebServer::setup()
         }
         json += "}}";
         request->send(200, "application/json", json);
+    });
+
+    server.on("/permission", HTTP_GET, [&] (AsyncWebServerRequest *request) {
+        if (request->hasParam("on")) {
+            earlyPermission = request->getParam("on")->value().toInt() != 0;
+            digitalWrite(CHADEMO_OUT1, earlyPermission ? HIGH : LOW);
+        }
+        request->send(200, "application/json", "{\"ok\":true}");
     });
 
     server.on("/diagset", HTTP_GET, [&] (AsyncWebServerRequest *request) {
