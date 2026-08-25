@@ -118,6 +118,37 @@ void ChademoWebServer::setup()
 
      });
 
+    server.on("/diagstate", HTTP_GET, [&] (AsyncWebServerRequest *request) {
+        String json = "{\"relays\":[";
+        for (int i = 0; i < 4; i++) {
+            json += diagRelayState(i) ? "true" : "false";
+            if (i < 3) json += ",";
+        }
+        //The optocouplers pull the input low while the charge sequence line carries voltage.
+        json += "],\"in1\":" + String(!digitalRead(CHADEMO_IN1) ? "true" : "false");
+        json += ",\"in2\":" + String(!digitalRead(CHADEMO_IN2) ? "true" : "false");
+        json += ",\"frames\":" + String(canFrames);
+        json += ",\"lastId\":" + String(canLastId);
+        json += ",\"age\":" + String(canFrames ? millis() - canLastMillis : 0);
+        json += ",\"active\":" + String(chargeInProgress() ? "true" : "false");
+        json += "}";
+        request->send(200, "application/json", json);
+    });
+
+    server.on("/diagset", HTTP_GET, [&] (AsyncWebServerRequest *request) {
+        if (!request->hasParam("relay") || !request->hasParam("on")) {
+            request->send(400, "application/json", "{\"error\":\"missing parameter\"}");
+            return;
+        }
+        int index = request->getParam("relay")->value().toInt();
+        bool on = request->getParam("on")->value().toInt() != 0;
+        if (!diagSetRelay(index, on)) {
+            request->send(409, "application/json", "{\"error\":\"charge sequence active\"}");
+            return;
+        }
+        request->send(200, "application/json", "{\"ok\":true}");
+    });
+
     server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
   
 

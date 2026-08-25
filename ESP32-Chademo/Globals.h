@@ -45,7 +45,17 @@ extern int Count;
 extern bool overrideStart1;
 extern bool overrideStart2;
 
+//RY3 and RY4 carry no signal, they exist so the diagnostics page can exercise all four.
+#define CHADEMO_OUT3 25
+#define CHADEMO_OUT4 26
+
+extern uint32_t canFrames;
+extern uint32_t canLastId;
+extern uint32_t canLastMillis;
+
 //Defined in the sketch, used by the web server.
 void updateTargetAV();
 bool chargeInProgress();
+bool diagRelayState(int index);
+bool diagSetRelay(int index, bool on);
 #endif

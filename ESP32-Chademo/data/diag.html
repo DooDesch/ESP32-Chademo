@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chademo Diagnose</title>
+<link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+
+<header class="topbar warn">
+	<span class="topbar-label">Diagnose</span>
+	<span class="topbar-state" id="lock">-</span>
+</header>
+
+<p class="hint">Die Relais schalten sofort. RY2 zieht beide Schütze an. Nur ohne Hochspannung benutzen.</p>
+
+<h2 class="section">Relais</h2>
+<div id="relays"></div>
+
+<h2 class="section">Eingänge</h2>
+<div class="cards">
+	<div class="card"><span class="card-label">IN 1 (d1, GPIO34)</span><span class="card-value" id="in1">-</span></div>
+	<div class="card"><span class="card-label">IN 2 (d2, GPIO35)</span><span class="card-value" id="in2">-</span></div>
+</div>
+
+<h2 class="section">CAN</h2>
+<div class="cards">
+	<div class="card"><span class="card-label">Frames</span><span class="card-value" id="frames">0</span></div>
+	<div class="card"><span class="card-label">Letzte ID</span><span class="card-value" id="lastid">-</span></div>
+	<div class="card"><span class="card-label">Letzter Empfang</span><span class="card-value" id="age">-</span></div>
+</div>
+
+<nav class="links">
+	<a href="/">Status</a>
+	<a href="/settings.html">Settings</a>
+	<a href="/update">Update</a>
+</nav>
+
+<script>
+var NAMES = ["RY1 Ladefreigabe", "RY2 Schütze", "RY3 frei", "RY4 frei"];
+var built = false;
+
+function build() {
+	var html = "";
+	for (var i = 0; i < 4; i++) {
+		html += '<div class="row"><span class="row-name">' + NAMES[i] + '</span>' +
+			'<button type="button" id="b' + i + '" onclick="toggle(' + i + ')">-</button></div>';
+	}
+	document.getElementById("relays").innerHTML = html;
+	built = true;
+}
+
+function draw(s) {
+	if (!built) build();
+	for (var i = 0; i < 4; i++) {
+		var b = document.getElementById("b" + i);
+		b.textContent = s.relays[i] ? "AN" : "AUS";
+		b.className = s.relays[i] ? "on" : "";
+		b.disabled = s.active;
+	}
+	document.getElementById("lock").textContent = s.active ? "gesperrt, Ladung laeuft" : "frei";
+	document.getElementById("in1").textContent = s.in1 ? "aktiv" : "ruhig";
+	document.getElementById("in2").textContent = s.in2 ? "aktiv" : "ruhig";
+	document.getElementById("frames").textContent = s.frames;
+	document.getElementById("lastid").textContent = s.frames ? "0x" + s.lastId.toString(16) : "-";
+	document.getElementById("age").textContent = s.frames ? s.age + " ms" : "-";
+}
+
+function poll() {
+	fetch("/diagstate").then(function (r) { return r.json(); }).then(draw).catch(function () {});
+}
+
+function toggle(i) {
+	var on = document.getElementById("b" + i).className ? 0 : 1;
+	fetch("/diagset?relay=" + i + "&on=" + on).then(poll);
+}
+
+setInterval(poll, 500);
+poll();
+</script>
+
+</body>
+</html>

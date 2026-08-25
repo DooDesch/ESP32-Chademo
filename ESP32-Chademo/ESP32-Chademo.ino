@@ -29,6 +29,9 @@ float Power = 0;
 float lastSavedAH = 0;
 double ampHourAcc = 0;
 double kiloWattHourAcc = 0;
+uint32_t canFrames = 0;
+uint32_t canLastId = 0;
+uint32_t canLastMillis = 0;
 int Count = 0;
 int socketMessage = 0;
 uint8_t soc;
@@ -97,6 +100,10 @@ void setup() {
   pinMode(CHADEMO_IN1, INPUT);
   pinMode(CHADEMO_OUT1, OUTPUT);
   pinMode(CHADEMO_OUT2, OUTPUT);
+  pinMode(CHADEMO_OUT3, OUTPUT);
+  pinMode(CHADEMO_OUT4, OUTPUT);
+  digitalWrite(CHADEMO_OUT3, LOW);
+  digitalWrite(CHADEMO_OUT4, LOW);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);
 
@@ -176,6 +183,22 @@ void updateTargetAV()
 bool chargeInProgress()
 {
   return chademo.bChademoMode != 0;
+}
+
+static const int DIAG_RELAY_PINS[4] = {CHADEMO_OUT1, CHADEMO_OUT2, CHADEMO_OUT3, CHADEMO_OUT4};
+
+bool diagRelayState(int index)
+{
+  if (index < 0 || index > 3) return false;
+  return digitalRead(DIAG_RELAY_PINS[index]) == HIGH;
+}
+
+//Manual relay control, refused while a charge sequence owns the outputs.
+bool diagSetRelay(int index, bool on)
+{
+  if (index < 0 || index > 3 || chargeInProgress()) return false;
+  digitalWrite(DIAG_RELAY_PINS[index], on ? HIGH : LOW);
+  return true;
 }
 
 
@@ -562,6 +585,9 @@ void loop() {
     }
   }
   if (ACAN_ESP32::can.receive(inFrame)) {
+    canFrames++;
+    canLastId = inFrame.id;
+    canLastMillis = millis();
     chademo.handleCANFrame(inFrame);
   }
 }
