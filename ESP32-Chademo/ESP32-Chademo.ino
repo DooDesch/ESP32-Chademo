@@ -96,8 +96,9 @@ void setup() {
   Serial.println("BENCH BUILD: brownout detector disabled, do not use on a charger");
 #endif
 
-  pinMode(CHADEMO_IN2, INPUT);
-  pinMode(CHADEMO_IN1, INPUT);
+  //Pullup, so an idle optocoupler output reads as no signal instead of floating.
+  pinMode(CHADEMO_IN2, INPUT_PULLUP);
+  pinMode(CHADEMO_IN1, INPUT_PULLUP);
   pinMode(CHADEMO_OUT1, OUTPUT);
   pinMode(CHADEMO_OUT2, OUTPUT);
   pinMode(CHADEMO_OUT3, OUTPUT);

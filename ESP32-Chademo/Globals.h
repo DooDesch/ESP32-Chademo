@@ -1,8 +1,11 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
-#define CHADEMO_IN1 34
-#define CHADEMO_IN2 35
+//GPIO34 and 35 are input only and have no internal pullup, so an optocoupler board with an open
+//collector output leaves them floating and the firmware reads a charge sequence that is not there.
+//27 and 13 have pullups, are not strapping pins and are free on this board.
+#define CHADEMO_IN1 27
+#define CHADEMO_IN2 13
 
 //LC-Relay-ESP32-4R-A2: RY1 drives the charge permission contact, RY2 the contactor coils
 #define CHADEMO_OUT1 32
