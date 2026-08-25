@@ -17,9 +17,7 @@ CHADEMO::CHADEMO(WebSocketPrint& webSocketPrint) : webSocketPrint { webSocketPri
   bChademoMode = 0;
   bChademoSendRequests = 0;
   bChademoRequest = 0;
-  //CHAdeMO wants the protocol number fixed from the first frame to the end of the session,
-  //so it is announced as 1.0 from the start instead of switching once the charger answers.
-  bChademo10Protocol = 1;
+  bChademo10Protocol = 0;
   bConnectorLocked = 0;
   askingAmps = 0;
   bListenEVSEStatus = 0;
@@ -91,7 +89,7 @@ void CHADEMO::loop()
 
       insertionTime = millis();
     }
-    else if (millis() > (uint32_t)(insertionTime + 30)) //CHAdeMO allows 500ms from d1 to the first frame
+    else if (millis() > (uint32_t)(insertionTime + 500))
     {
       if (bChademoMode == 0)
       {
@@ -110,7 +108,7 @@ void CHADEMO::loop()
           carStatus.notParked = 0;
           carStatus.stopRequest = 0;
           carStatus.voltDeviation = 0;
-          bChademo10Protocol = 1;
+          bChademo10Protocol = 0;
         }
       }
     }
@@ -159,19 +157,29 @@ void CHADEMO::loop()
 
     if (bChademoSendRequests && bChademoRequest)
     {
+      static byte frameRotate;
       bChademoRequest = 0;
-      //CHAdeMO expects every vehicle frame every 100ms. Rotating one frame per request stretched
-      //each ID out to 225ms, which an EVSE can treat as a communication fault.
-      sendCANStatus();
-      sendCANBattSpecs();
-      sendCANChargingTime();
+      frameRotate++;
+      frameRotate %= 3;
+      switch (frameRotate)
+      {
+        case 0:
+          sendCANStatus();
+          break;
+        case 1:
+          sendCANBattSpecs();
+          break;
+        case 2:
+          sendCANChargingTime();
+          break;
+      }
     }
 
     switch (chademoState)
     {
       case STARTUP:
         bDoMismatchChecks = 0; //reset it for now
-        chademoState = SEND_INITIAL_PARAMS; //no delay, the charger expects frames within 500ms of d1
+        setDelayedState(SEND_INITIAL_PARAMS, 50);
         break;
       case SEND_INITIAL_PARAMS:
         //we could do calculations to see how long the charge should take based on SOC and
@@ -179,7 +187,7 @@ void CHADEMO::loop()
         //One problem with that is that we don't yet know the EVSE parameters so we can't know
         //the max allowable amperage just yet.
         bChademoSendRequests = 1; //causes chademo frames to be sent out every 100ms
-        chademoState = WAIT_FOR_EVSE_PARAMS;
+        setDelayedState(WAIT_FOR_EVSE_PARAMS, 50);
         if (settings.debuggingLevel > 0) {
           Serial.println(F("Sent params to EVSE. Waiting."));
           webSocketPrint.message(F("Sent params to EVSE. Waiting."));
@@ -395,8 +403,7 @@ void CHADEMO::handleCANFrame(CANMessage &frame)
   {
    
     lastCommTime = millis();
-    //Deliberately not adopting the charger's protocol number: changing it mid session is what
-    //the specification forbids, and the vehicle side stays on the value it started with.
+    if (frame.data[0] > 1) bChademo10Protocol = 1;
     evse_status.presentVoltage = frame.data[1] + 256 * frame.data[2];
     evse_status.presentCurrent  = frame.data[3];
     evse_status.status = frame.data[5];
