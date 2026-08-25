@@ -68,7 +68,14 @@ function draw(s) {
 }
 
 function poll() {
-	fetch("/diagstate").then(function (r) { return r.json(); }).then(draw).catch(function () {});
+	fetch("/diagstate").then(function (r) {
+		//An older firmware serves this page but not the endpoint, which otherwise looks like a
+		//dead page full of dashes rather than a missing half of the update.
+		if (!r.ok) throw new Error("no endpoint");
+		return r.json();
+	}).then(draw).catch(function () {
+		document.getElementById("lock").textContent = "Firmware zu alt, bitte firmware.bin flashen";
+	});
 }
 
 function toggle(i) {
