@@ -172,7 +172,14 @@ void setup() {
   String apPW = prefs.getString("apPW", AP_PASSWORD);
   String staSSID = prefs.getString("staSSID", "");
   String staPW = prefs.getString("staPW", "");
+  earlyPermission = prefs.getBool("early", false);
   prefs.end();
+
+  if (earlyPermission) {
+    digitalWrite(CHADEMO_OUT1, HIGH);
+    overrideStart1 = true;
+    Serial.println(F("Early permission on: contact closed, frames start without d1"));
+  }
 
   WiFi.mode(staSSID.length() ? WIFI_AP_STA : WIFI_AP);
   WiFi.hostname(HOSTNAME);

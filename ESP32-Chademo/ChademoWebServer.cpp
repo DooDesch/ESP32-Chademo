@@ -176,6 +176,11 @@ void ChademoWebServer::setup()
             //A charger that waits for the vehicle CAN before it energises the sequence line also
             //needs the frames to start without d1, so the sequence runs as if the plug were seen.
             overrideStart1 = earlyPermission;
+            //Remembered, because a charger that needs this needs it on every single charge.
+            Preferences prefs;
+            prefs.begin("wifi", false);
+            prefs.putBool("early", earlyPermission);
+            prefs.end();
         }
         request->send(200, "application/json", "{\"ok\":true}");
     });
