@@ -131,7 +131,19 @@ void ChademoWebServer::setup()
         json += ",\"lastId\":" + String(canLastId);
         json += ",\"age\":" + String(canFrames ? millis() - canLastMillis : 0);
         json += ",\"active\":" + String(chargeInProgress() ? "true" : "false");
-        json += "}";
+        //Build stamp, so the page can say which firmware is actually running. Two updates were
+        //already diagnosed as a wiring fault because an older binary of the same name was flashed.
+        json += ",\"version\":\"" + String(__DATE__) + " " + String(__TIME__) + "\"";
+        json += ",\"in1pin\":" + String(CHADEMO_IN1) + ",\"in2pin\":" + String(CHADEMO_IN2);
+        //Raw level of every pin an input could sit on, so a wiring question can be looked at
+        //instead of guessed at. A pin with a pullup and nothing attached reads 1.
+        json += ",\"pins\":{";
+        const int probe[] = {4, 13, 14, 27, 34, 35};
+        for (int i = 0; i < 6; i++) {
+            json += "\"" + String(probe[i]) + "\":" + String(digitalRead(probe[i]));
+            if (i < 5) json += ",";
+        }
+        json += "}}";
         request->send(200, "application/json", json);
     });
 

@@ -18,11 +18,21 @@
 <h2 class="section">Relais</h2>
 <div id="relays"></div>
 
+<h2 class="section">Firmware</h2>
+<div class="cards">
+	<div class="card"><span class="card-label">Stand</span><span class="card-value" id="version">-</span></div>
+	<div class="card"><span class="card-label">Eingangspins</span><span class="card-value" id="inpins">-</span></div>
+</div>
+
 <h2 class="section">Eingänge</h2>
 <div class="cards">
-	<div class="card"><span class="card-label">IN 1 (d1, GPIO27)</span><span class="card-value" id="in1">-</span></div>
-	<div class="card"><span class="card-label">IN 2 (d2, GPIO13)</span><span class="card-value" id="in2">-</span></div>
+	<div class="card"><span class="card-label" id="in1label">IN 1 (d1)</span><span class="card-value" id="in1">-</span></div>
+	<div class="card"><span class="card-label" id="in2label">IN 2 (d2)</span><span class="card-value" id="in2">-</span></div>
 </div>
+
+<h2 class="section">Pins roh</h2>
+<p class="hint">1 heißt offen oder Pullup, 0 heißt auf Masse gezogen. Ein freier Pin mit Pullup zeigt 1.</p>
+<div class="cards" id="pins"></div>
 
 <h2 class="section">CAN</h2>
 <div class="cards">
@@ -60,6 +70,16 @@ function draw(s) {
 		b.disabled = s.active;
 	}
 	document.getElementById("lock").textContent = s.active ? "gesperrt, Ladung laeuft" : "frei";
+	document.getElementById("version").textContent = s.version || "-";
+	document.getElementById("inpins").textContent = "d1 " + s.in1pin + " / d2 " + s.in2pin;
+	document.getElementById("in1label").textContent = "IN 1 (d1, GPIO" + s.in1pin + ")";
+	document.getElementById("in2label").textContent = "IN 2 (d2, GPIO" + s.in2pin + ")";
+	var html = "";
+	for (var pin in s.pins) {
+		html += '<div class="card"><span class="card-label">GPIO' + pin + '</span>' +
+			'<span class="card-value">' + s.pins[pin] + '</span></div>';
+	}
+	document.getElementById("pins").innerHTML = html;
 	document.getElementById("in1").textContent = s.in1 ? "aktiv" : "ruhig";
 	document.getElementById("in2").textContent = s.in2 ? "aktiv" : "ruhig";
 	document.getElementById("frames").textContent = s.frames;
