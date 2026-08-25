@@ -622,10 +622,10 @@ void loop() {
   //controller switches itself off. It is then deaf as well as mute, which looks exactly like a
   //broken transceiver. Recovering brings it back the moment the charger starts talking.
   canStatus = ACAN_ESP32::can.statusFlags();
-  if ((canStatus & 0x04) && (millis() - canRecoverMillis > 500)) {
-    ACAN_ESP32::can.recoverFromBusOff();
-    canBusOffCount++;
+  if ((canStatus & 0x04) && (millis() - canRecoverMillis > 50)) {
     canRecoverMillis = millis();
+    //Only count what actually recovered: recovery needs an idle bus and fails until it sees one.
+    if (ACAN_ESP32::can.recoverFromBusOff()) canBusOffCount++;
   }
 
   if (ACAN_ESP32::can.receive(inFrame)) {
