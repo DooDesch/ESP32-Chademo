@@ -61,6 +61,8 @@ extern uint32_t canFrames;
 extern uint32_t canLastId;
 extern uint32_t canLastMillis;
 
+void saveWifi(const char *key, const String &value);
+
 //Defined in the sketch, used by the web server.
 void updateTargetAV();
 bool chargeInProgress();

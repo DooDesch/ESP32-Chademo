@@ -3,6 +3,7 @@
 #include <SPIFFS.h>
 #include <EEPROM.h>
 #include <ElegantOTA.h>
+#include <Preferences.h>
 
 
 AsyncWebServer server(80);
@@ -24,6 +25,15 @@ void ChademoWebServer::execute() {
     }
 }
 
+//Wifi credentials live in NVS rather than in the settings struct, so storing them cannot shift
+//the EEPROM layout and wipe the charge limits someone typed in at a charger.
+void saveWifi(const char *key, const String &value) {
+    Preferences prefs;
+    prefs.begin("wifi", false);
+    prefs.putString(key, value);
+    prefs.end();
+}
+
 void ChademoWebServer::broadcast(const char * message) {
     ws.printfAll(message);
 }
@@ -37,10 +47,21 @@ void ChademoWebServer::setup()
         bool updated = true;
         if(request->hasParam("apSSID", true) && request->hasParam("apPW", true)) 
         {
-            WiFi.softAP(request->arg("apSSID").c_str(), request->arg("apPW").c_str());
+            String ssid = request->arg("apSSID");
+            String pw = request->arg("apPW");
+            //An access point password under eight characters is refused by the radio and the
+            //network comes up open, which is worse than keeping the one that works.
+            if (ssid.length() > 0 && (pw.length() == 0 || pw.length() >= 8))
+            {
+                saveWifi("apSSID", ssid);
+                saveWifi("apPW", pw);
+                WiFi.softAP(ssid.c_str(), pw.length() ? pw.c_str() : NULL);
+            }
         }
         else if(request->hasParam("staSSID", true) && request->hasParam("staPW", true)) 
         {
+            saveWifi("staSSID", request->arg("staSSID"));
+            saveWifi("staPW", request->arg("staPW"));
             WiFi.mode(WIFI_AP_STA);
             WiFi.begin(request->arg("staSSID").c_str(), request->arg("staPW").c_str());
         }

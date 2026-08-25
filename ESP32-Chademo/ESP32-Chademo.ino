@@ -8,6 +8,7 @@
 #include <EEPROM.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
+#include <Preferences.h>
 #ifdef DISABLE_BROWNOUT
 #include <soc/soc.h>
 #include <soc/rtc_cntl_reg.h>
@@ -158,10 +159,28 @@ void setup() {
 
   updateTargetAV();
 
-  WiFi.mode(WIFI_AP);
+  //Holding the IO0 button at boot restores the built in access point, the way back in after a
+  //password nobody remembers.
+  pinMode(0, INPUT_PULLUP);
+  Preferences prefs;
+  prefs.begin("wifi", false);
+  if (digitalRead(0) == LOW) {
+    prefs.clear();
+    Serial.println(F("IO0 held: wifi settings cleared"));
+  }
+  String apSSID = prefs.getString("apSSID", AP_SSID);
+  String apPW = prefs.getString("apPW", AP_PASSWORD);
+  String staSSID = prefs.getString("staSSID", "");
+  String staPW = prefs.getString("staPW", "");
+  prefs.end();
+
+  WiFi.mode(staSSID.length() ? WIFI_AP_STA : WIFI_AP);
   WiFi.hostname(HOSTNAME);
-  WiFi.softAP(AP_SSID, AP_PASSWORD);
-  Serial.print(F("AP IP: "));
+  WiFi.softAP(apSSID.c_str(), apPW.length() ? apPW.c_str() : NULL);
+  if (staSSID.length()) WiFi.begin(staSSID.c_str(), staPW.c_str());
+  Serial.print(F("AP "));
+  Serial.print(apSSID);
+  Serial.print(F(" IP: "));
   Serial.println(WiFi.softAPIP());
 
   chademoWebServer.setup();
