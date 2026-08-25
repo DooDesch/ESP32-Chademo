@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
+#include <ElegantOTA.h>
 #include <ACAN_ESP32.h>
 
 #define AP_SSID "ESP32-CHADEMO"
@@ -136,6 +137,8 @@ void setup() {
     request->send(200, "application/json", "{\"ok\":true}");
   });
 
+  //So the CHAdeMO firmware can be put back over the air instead of over the cable.
+  ElegantOTA.begin(&server);
   server.begin();
 }
 
@@ -147,4 +150,5 @@ void loop() {
     canLastMillis = millis();
   }
   digitalWrite(LED_PIN, (millis() / 500) % 2);
+  ElegantOTA.loop();
 }
