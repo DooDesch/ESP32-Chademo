@@ -151,6 +151,7 @@ void ChademoWebServer::setup()
         json += ",\"frames\":" + String(canFrames);
         json += ",\"lastId\":" + String(canLastId);
         json += ",\"age\":" + String(canFrames ? millis() - canLastMillis : 0);
+        json += ",\"busOff\":" + String(canBusOffCount) + ",\"canStatus\":" + String(canStatus);
         json += ",\"active\":" + String(chargeInProgress() ? "true" : "false");
         json += ",\"early\":" + String(earlyPermission ? "true" : "false");
         //Build stamp, so the page can say which firmware is actually running. Two updates were

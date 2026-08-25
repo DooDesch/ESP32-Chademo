@@ -32,6 +32,9 @@ double ampHourAcc = 0;
 double kiloWattHourAcc = 0;
 bool earlyPermission = false;
 uint32_t canFrames = 0;
+uint32_t canBusOffCount = 0;
+uint32_t canStatus = 0;
+uint32_t canRecoverMillis = 0;
 uint32_t canLastId = 0;
 uint32_t canLastMillis = 0;
 int Count = 0;
@@ -615,6 +618,16 @@ void loop() {
       }
     }
   }
+  //A CAN node alone on the bus never gets an acknowledge, so its error counters climb until the
+  //controller switches itself off. It is then deaf as well as mute, which looks exactly like a
+  //broken transceiver. Recovering brings it back the moment the charger starts talking.
+  canStatus = ACAN_ESP32::can.statusFlags();
+  if ((canStatus & 0x04) && (millis() - canRecoverMillis > 500)) {
+    ACAN_ESP32::can.recoverFromBusOff();
+    canBusOffCount++;
+    canRecoverMillis = millis();
+  }
+
   if (ACAN_ESP32::can.receive(inFrame)) {
     canFrames++;
     canLastId = inFrame.id;

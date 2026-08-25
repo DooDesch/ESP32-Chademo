@@ -46,6 +46,8 @@
 	<div class="card"><span class="card-label">Frames</span><span class="card-value" id="frames">0</span></div>
 	<div class="card"><span class="card-label">Letzte ID</span><span class="card-value" id="lastid">-</span></div>
 	<div class="card"><span class="card-label">Letzter Empfang</span><span class="card-value" id="age">-</span></div>
+	<div class="card"><span class="card-label">Bus-Off</span><span class="card-value" id="busoff">0</span></div>
+	<div class="card"><span class="card-label">Busstatus</span><span class="card-value" id="canstatus">-</span></div>
 </div>
 
 <nav class="links">
@@ -95,6 +97,8 @@ function draw(s) {
 	document.getElementById("frames").textContent = s.frames;
 	document.getElementById("lastid").textContent = s.frames ? "0x" + s.lastId.toString(16) : "-";
 	document.getElementById("age").textContent = s.frames ? s.age + " ms" : "-";
+	document.getElementById("busoff").textContent = s.busOff;
+	document.getElementById("canstatus").textContent = s.canStatus ? s.canStatus : "ok";
 }
 
 function poll() {

@@ -60,6 +60,8 @@ extern bool earlyPermission;
 extern uint32_t canFrames;
 extern uint32_t canLastId;
 extern uint32_t canLastMillis;
+extern uint32_t canBusOffCount;
+extern uint32_t canStatus;
 
 void saveWifi(const char *key, const String &value);
 
