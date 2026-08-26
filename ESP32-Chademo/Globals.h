@@ -70,5 +70,7 @@ void updateTargetAV();
 bool chargeInProgress();
 bool diagRelayState(int index);
 void resetSequence();
+void logLine(const char *fmt, ...);
+String logDump();
 bool diagSetRelay(int index, bool on);
 #endif

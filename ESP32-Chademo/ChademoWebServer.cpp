@@ -187,6 +187,10 @@ void ChademoWebServer::setup()
         request->send(200, "application/json", "{\"ok\":true}");
     });
 
+    server.on("/log.txt", HTTP_GET, [&] (AsyncWebServerRequest *request) {
+        request->send(200, "text/plain", logDump());
+    });
+
     server.on("/resetseq", HTTP_GET, [&] (AsyncWebServerRequest *request) {
         resetSequence();
         request->send(200, "application/json", "{\"ok\":true}");

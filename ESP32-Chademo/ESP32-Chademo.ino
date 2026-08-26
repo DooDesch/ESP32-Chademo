@@ -31,6 +31,11 @@ float lastSavedAH = 0;
 double ampHourAcc = 0;
 double kiloWattHourAcc = 0;
 bool earlyPermission = false;
+//Ring buffer, because the box runs without a serial cable: the whole point is that a run at a
+//charger can be read back afterwards from /log.txt instead of being described from memory.
+static char logBuf[6144];
+static size_t logPos = 0;
+static bool logWrapped = false;
 uint32_t canFrames = 0;
 uint32_t canBusOffCount = 0;
 uint32_t canStatus = 0;
@@ -201,6 +206,7 @@ void setup() {
   Serial.print(F(" IP: "));
   Serial.println(WiFi.softAPIP());
 
+  logLine("boot %s %s", __DATE__, __TIME__);
   chademoWebServer.setup();
 
   /* 1 tick take 1/(80MHZ/80) = 1us so we set divider 80 and count up */
@@ -213,6 +219,34 @@ void setup() {
   /* Repeat the alarm (third parameter) */
   timerAlarmWrite(timer, 25000, true);
   timerAlarmEnable(timer);
+}
+
+void logLine(const char *fmt, ...)
+{
+  char line[160];
+  unsigned long t = millis();
+  int n = snprintf(line, sizeof(line), "%lu.%03lu ", t / 1000, t % 1000);
+  va_list args;
+  va_start(args, fmt);
+  n += vsnprintf(line + n, sizeof(line) - n - 2, fmt, args);
+  va_end(args);
+  if (n < 0) return;
+  if (n > (int)sizeof(line) - 2) n = sizeof(line) - 2;
+  line[n++] = 0x0A;
+  for (int i = 0; i < n; i++) {
+    logBuf[logPos++] = line[i];
+    if (logPos >= sizeof(logBuf)) { logPos = 0; logWrapped = true; }
+  }
+  Serial.write((const uint8_t *)line, n);
+}
+
+String logDump()
+{
+  String out;
+  out.reserve(logWrapped ? sizeof(logBuf) : logPos);
+  if (logWrapped) for (size_t i = logPos; i < sizeof(logBuf); i++) out += logBuf[i];
+  for (size_t i = 0; i < logPos; i++) out += logBuf[i];
+  return out;
 }
 
 void updateTargetAV()
@@ -632,6 +666,28 @@ void loop() {
       }
     }
   }
+  //Everything worth reconstructing later is polled here rather than sprinkled through the state
+  //machine: state changes, both sequence signals, both relays, and what the charger sends.
+  {
+    static const char *STATE_NAMES[] = {"STARTUP", "SEND_PARAMS", "WAIT_PARAMS", "SET_BEGIN",
+      "WAIT_CONFIRM", "CLOSE_CONTACTORS", "RUNNING", "CEASE_CURRENT", "WAIT_ZERO_CURRENT",
+      "OPEN_CONTACTOR", "FAULTED", "STOPPED", "LIMBO"};
+    static int lastState = -1;
+    static int lastIn1 = -1, lastIn2 = -1, lastOut1 = -1, lastOut2 = -1;
+
+    int st = chademo.getState();
+    if (st != lastState) {
+      lastState = st;
+      logLine("state %s", st >= 0 && st <= 12 ? STATE_NAMES[st] : "?");
+    }
+    int in1 = !digitalRead(CHADEMO_IN1), in2 = !digitalRead(CHADEMO_IN2);
+    if (in1 != lastIn1) { lastIn1 = in1; logLine("d1 %s", in1 ? "aktiv" : "ruhig"); }
+    if (in2 != lastIn2) { lastIn2 = in2; logLine("d2 %s", in2 ? "aktiv" : "ruhig"); }
+    int out1 = digitalRead(CHADEMO_OUT1), out2 = digitalRead(CHADEMO_OUT2);
+    if (out1 != lastOut1) { lastOut1 = out1; logLine("RY1 %s", out1 ? "zu" : "auf"); }
+    if (out2 != lastOut2) { lastOut2 = out2; logLine("RY2 %s", out2 ? "zu" : "auf"); }
+  }
+
   //A CAN node alone on the bus never gets an acknowledge, so its error counters climb until the
   //controller switches itself off. It is then deaf as well as mute, which looks exactly like a
   //broken transceiver. Recovering brings it back the moment the charger starts talking.
@@ -646,6 +702,27 @@ void loop() {
     canFrames++;
     canLastId = inFrame.id;
     canLastMillis = millis();
+
+    //0x108 arrives rarely and matters every time; 0x109 repeats at 100ms, so only a change in
+    //what the charger reports is worth a line.
+    if (inFrame.id == 0x108) {
+      logLine("0x108 verfuegbar %d V %d A schwelle %d V",
+              inFrame.data[1] + inFrame.data[2] * 256, inFrame.data[3],
+              inFrame.data[4] + inFrame.data[5] * 256);
+    } else if (inFrame.id == 0x109) {
+      static int lastV = -1, lastA = -1, lastStatus = -1;
+      int v = inFrame.data[1] + inFrame.data[2] * 256;
+      int a = inFrame.data[3];
+      int status = inFrame.data[5];
+      if (v != lastV || a != lastA || status != lastStatus) {
+        lastV = v; lastA = a; lastStatus = status;
+        logLine("0x109 %d V %d A status 0x%02X", v, a, status);
+      }
+    } else {
+      static uint32_t lastOther = 0;
+      if (millis() - lastOther > 1000) { lastOther = millis(); logLine("frame 0x%03X", inFrame.id); }
+    }
+
     chademo.handleCANFrame(inFrame);
   }
 }
