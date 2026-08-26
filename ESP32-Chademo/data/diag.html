@@ -22,6 +22,12 @@
 </div>
 <p class="hint">Für Säulen, die erst 12 V liefern, wenn sie Freigabe und CAN vom Fahrzeug sehen. Setzt die Freigabe und startet die Frames sofort. Nach einem Neustart wieder aus.</p>
 
+<h2 class="section">Sequenz</h2>
+<div class="row">
+	<span class="row-name">Nach Abbruch wieder scharf machen</span>
+	<button type="button" onclick="fetch('/resetseq').then(poll)">RESET</button>
+</div>
+
 <h2 class="section">Relais</h2>
 <div id="relays"></div>
 

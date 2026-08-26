@@ -99,6 +99,7 @@ class CHADEMO
     void loop();
     void doProcessing();
     void handleCANFrame(CANMessage &frame);
+    void resetSequence();
     void setChargingFault();
     void setBattOverTemp();
     void setStateOfCharge(uint8_t stateofcharge);

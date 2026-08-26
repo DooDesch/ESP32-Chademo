@@ -65,6 +65,27 @@ void CHADEMO::setTargetVoltage(uint16_t t_volt)
   carStatus.targetVoltage = t_volt;
 }
 
+//Lets a stopped or faulted session be armed again without unplugging: the sequence only rearms
+//when the charge sequence line drops, which at a charger that keeps it energised never happens.
+void CHADEMO::resetSequence()
+{
+  bStartedCharge = 0;
+  bChademoSendRequests = 0;
+  bListenEVSEStatus = 0;
+  bDoMismatchChecks = 0;
+  faultCount = 0;
+  vOverFault = 0;
+  carStatus.battOverVolt = 0;
+  carStatus.battUnderVolt = 0;
+  carStatus.chargingFault = 0;
+  carStatus.currDeviation = 0;
+  carStatus.voltDeviation = 0;
+  carStatus.stopRequest = 0;
+  chademoState = STOPPED;
+  digitalWrite(CHADEMO_OUT2, LOW);
+  Serial.println(F("Sequence reset"));
+}
+
 void CHADEMO::setChargingFault()
 {
   carStatus.chargingFault = 1;
@@ -227,10 +248,14 @@ void CHADEMO::loop()
           webSocketPrint.message(F("CAR:Current req to 0"));
         }
         carStatus.targetCurrent = 0;
+        stateMilli = millis();
         chademoState = WAIT_FOR_ZERO_CURRENT;
         break;
       case WAIT_FOR_ZERO_CURRENT:
-        if (evse_status.presentCurrent == 0)
+        //A charger that has already ended the session stops sending 0x109, and the last reported
+        //current then stands forever. Without this the box waits here for good: contactors closed,
+        //no way back to STOPPED, and the next plug in does nothing.
+        if (evse_status.presentCurrent == 0 || (millis() - stateMilli) > 3000)
         {
           setDelayedState(OPEN_CONTACTOR, 150);
         }

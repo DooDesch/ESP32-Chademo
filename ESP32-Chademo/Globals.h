@@ -69,5 +69,6 @@ void saveWifi(const char *key, const String &value);
 void updateTargetAV();
 bool chargeInProgress();
 bool diagRelayState(int index);
+void resetSequence();
 bool diagSetRelay(int index, bool on);
 #endif

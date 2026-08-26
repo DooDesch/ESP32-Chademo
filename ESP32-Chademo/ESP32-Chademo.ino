@@ -227,6 +227,12 @@ bool diagRelayState(int index)
   return digitalRead(DIAG_RELAY_PINS[index]) == HIGH;
 }
 
+//Arms a stopped or faulted session again without unplugging.
+void resetSequence()
+{
+  chademo.resetSequence();
+}
+
 //Manual relay control, refused while a charge sequence owns the outputs.
 bool diagSetRelay(int index, bool on)
 {

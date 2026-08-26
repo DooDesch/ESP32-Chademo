@@ -187,6 +187,11 @@ void ChademoWebServer::setup()
         request->send(200, "application/json", "{\"ok\":true}");
     });
 
+    server.on("/resetseq", HTTP_GET, [&] (AsyncWebServerRequest *request) {
+        resetSequence();
+        request->send(200, "application/json", "{\"ok\":true}");
+    });
+
     server.on("/diagset", HTTP_GET, [&] (AsyncWebServerRequest *request) {
         if (!request->hasParam("relay") || !request->hasParam("on")) {
             request->send(400, "application/json", "{\"error\":\"missing parameter\"}");
