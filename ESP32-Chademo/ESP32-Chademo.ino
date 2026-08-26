@@ -90,6 +90,20 @@ void IRAM_ATTR onTimer() {
 }
 
 void setup() {
+  //First thing, before serial and its four second delay: until a pin is driven it sits as a high
+  //impedance input and the relay driver sees an undefined level. That left both contactor relays
+  //free to pull for seconds after every reset, right through a charger's insulation test.
+  digitalWrite(CHADEMO_OUT1, LOW);
+  digitalWrite(CHADEMO_OUT2, LOW);
+  digitalWrite(CHADEMO_OUT3, LOW);
+  digitalWrite(CHADEMO_OUT4, LOW);
+  pinMode(CHADEMO_OUT1, OUTPUT);
+  pinMode(CHADEMO_OUT2, OUTPUT);
+  pinMode(CHADEMO_OUT3, OUTPUT);
+  pinMode(CHADEMO_OUT4, OUTPUT);
+  digitalWrite(CHADEMO_OUT1, LOW);
+  digitalWrite(CHADEMO_OUT2, LOW);
+
   Serial.begin(115200);
   delay(4000);
 
@@ -107,12 +121,6 @@ void setup() {
   //Spare candidates for the inputs, pulled up so the diagnostics page shows a meaningful level.
   pinMode(4, INPUT_PULLUP);
   pinMode(14, INPUT_PULLUP);
-  pinMode(CHADEMO_OUT1, OUTPUT);
-  pinMode(CHADEMO_OUT2, OUTPUT);
-  pinMode(CHADEMO_OUT3, OUTPUT);
-  pinMode(CHADEMO_OUT4, OUTPUT);
-  digitalWrite(CHADEMO_OUT3, LOW);
-  digitalWrite(CHADEMO_OUT4, LOW);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);
 
