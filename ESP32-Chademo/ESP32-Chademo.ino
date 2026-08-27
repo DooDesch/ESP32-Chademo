@@ -32,6 +32,7 @@ double ampHourAcc = 0;
 double kiloWattHourAcc = 0;
 bool earlyPermission = false;
 bool skipD2 = false;
+bool force09 = false;
 //Ring buffer, because the box runs without a serial cable: the whole point is that a run at a
 //charger can be read back afterwards from /log.txt instead of being described from memory.
 static char logBuf[6144];
@@ -718,6 +719,12 @@ void loop() {
         logLine("0x108 verfuegbar %d V %d A schwelle %d V", availV, availA, thresh);
       }
     } else if (inFrame.id == 0x109) {
+      //The charger's own protocol number decides which bits it expects from us; log it once.
+      static int lastProto = -1;
+      if (inFrame.data[0] != lastProto) {
+        lastProto = inFrame.data[0];
+        logLine("0x109 protokoll %d", lastProto);
+      }
       static int lastV = -1, lastA = -1, lastStatus = -1;
       int v = inFrame.data[1] + inFrame.data[2] * 256;
       int a = inFrame.data[3];

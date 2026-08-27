@@ -61,6 +61,10 @@ extern bool earlyPermission;
 //output below 20V. For a charger that runs the whole sequence but never asserts d2.
 extern bool skipD2;
 
+//Announces CHAdeMO 0.9 instead of 1.0. A charger speaking 0.9 expects the two 1.0 status bits to
+//stay zero, and both sides are supposed to fall back to the lower version.
+extern bool force09;
+
 extern uint32_t canFrames;
 extern uint32_t canLastId;
 extern uint32_t canLastMillis;

@@ -156,6 +156,7 @@ void ChademoWebServer::setup()
         json += ",\"active\":" + String(chargeInProgress() ? "true" : "false");
         json += ",\"early\":" + String(earlyPermission ? "true" : "false");
         json += ",\"skipD2\":" + String(skipD2 ? "true" : "false");
+        json += ",\"force09\":" + String(force09 ? "true" : "false");
         //Build stamp, so the page can say which firmware is actually running. Two updates were
         //already diagnosed as a wiring fault because an older binary of the same name was flashed.
         json += ",\"version\":\"" + String(__DATE__) + " " + String(__TIME__) + "\"";
@@ -196,6 +197,14 @@ void ChademoWebServer::setup()
         if (request->hasParam("on")) {
             skipD2 = request->getParam("on")->value().toInt() != 0;
             logLine("skipD2 %s", skipD2 ? "an" : "aus");
+        }
+        request->send(200, "application/json", "{\"ok\":true}");
+    });
+
+    server.on("/proto09", HTTP_GET, [&] (AsyncWebServerRequest *request) {
+        if (request->hasParam("on")) {
+            force09 = request->getParam("on")->value().toInt() != 0;
+            logLine("protokoll 0.9 %s", force09 ? "an" : "aus");
         }
         request->send(200, "application/json", "{\"ok\":true}");
     });

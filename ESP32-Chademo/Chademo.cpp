@@ -131,7 +131,7 @@ void CHADEMO::loop()
           carStatus.notParked = 0;
           carStatus.stopRequest = 0;
           carStatus.voltDeviation = 0;
-          bChademo10Protocol = 1;
+          bChademo10Protocol = force09 ? 0 : 1;
         }
       }
     }
