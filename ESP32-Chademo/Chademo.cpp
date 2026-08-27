@@ -217,10 +217,12 @@ void CHADEMO::loop()
 
         }
         digitalWrite(CHADEMO_OUT1, HIGH); //signal that we're ready to charge
-        carStatus.chargingEnabled = 1; //should this be enabled here???
+        //The CAN bit follows the contact rather than announcing permission the charger cannot yet
+        //see: it is set once the relay has had its 50ms to actually close.
         setDelayedState(WAIT_FOR_BEGIN_CONFIRMATION, 50);
         break;
       case WAIT_FOR_BEGIN_CONFIRMATION:
+        carStatus.chargingEnabled = 1;
         if (!digitalRead(CHADEMO_IN2) || overrideStart2) //inverse logic, OPTOs
         {
           setDelayedState(CLOSE_CONTACTORS, 100);
@@ -425,7 +427,7 @@ void CHADEMO::handleCANFrame(CANMessage &frame)
     evse_status.presentVoltage = frame.data[1] + 256 * frame.data[2];
     evse_status.presentCurrent  = frame.data[3];
     evse_status.status = frame.data[5];
-    bConnectorLocked = (frame.data[5] >> 2) && 0x01;
+    bConnectorLocked = (frame.data[5] >> 2) & 0x01;
 
     
     if (frame.data[6] < 0xFF)
@@ -550,11 +552,8 @@ void CHADEMO::sendCANBattSpecs()
   outFrame.data[3] = 0x00; // Not Used
   outFrame.data[4] = lowByte(settings.maxChargeVoltage);
   outFrame.data[5] = highByte(settings.maxChargeVoltage);
-  if(settings.useBms) {
-     outFrame.data[6] = 100;
-  } else {
-     outFrame.data[6] = (uint8_t)settings.capacity; //pack size....
-  }
+  //CHAdeMO 1.0 fixes this field at 100 percent; the real state of charge goes out in 0x102.
+  outFrame.data[6] = 100;
   outFrame.data[7] = 0; //not used
 
   ACAN_ESP32::can.tryToSend(outFrame);
@@ -582,7 +581,7 @@ void CHADEMO::sendCANChargingTime()
   outFrame.data[2] = 90; //ask for how long of a charge? It will be forceably stopped if we hit this time
   outFrame.data[3] = 60; //how long we think the charge will actually take
   outFrame.data[4] = 0; //not used
-  outFrame.data[5] = 0x02; //not used but lets just report a large battery incase
+  outFrame.data[5] = 0x00; //reserved, and a strict charger may reject a nonzero value
   outFrame.data[6] = 0x0; //not used
   outFrame.data[7] = 0; //not used
   ACAN_ESP32::can.tryToSend(outFrame);
