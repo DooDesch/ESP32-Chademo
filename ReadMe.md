@@ -52,7 +52,10 @@ that loop dead, and the charger stops after the insulation test.
 ```
 
 Pin 10 carries no supply of its own and must not be tied to the board ground, so signal 2 cannot be
-read with the same optocoupler arrangement as signal 1. Above roughly 2 A of total coil current the
+read with the same optocoupler arrangement as signal 1: its optocoupler goes from pin 2 through the
+LED to pin 10, in parallel with the coils, and conducts when the charger closes the ground leg.
+
+Signal 1 supplies up to 2 A, which covers two 12 V coils drawing about 1 A together. Above that the
 loop drives a small 12 V relay instead, which then switches the local supply to the coils.
 
 RY2 is a disconnect in that loop, not the thing that closes the contactors: closed means the charger
