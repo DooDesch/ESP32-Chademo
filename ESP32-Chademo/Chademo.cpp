@@ -576,10 +576,13 @@ void CHADEMO::sendCANBattSpecs()
   outFrame.data[1] = 0x00; // Not Used
   outFrame.data[2] = 0x00; // Not Used
   outFrame.data[3] = 0x00; // Not Used
-  outFrame.data[4] = lowByte(settings.maxChargeVoltage);
-  outFrame.data[5] = highByte(settings.maxChargeVoltage);
+  //ZombieVerter, which charges at real chargers, announces the maximum as target plus 40V rather
+  //than a separately configured number, and a reference constant of 200.
+  uint16_t maxVolts = force09 ? carStatus.targetVoltage + 40 : settings.maxChargeVoltage;
+  outFrame.data[4] = lowByte(maxVolts);
+  outFrame.data[5] = highByte(maxVolts);
   //CHAdeMO 1.0 fixes this field at 100 percent; the real state of charge goes out in 0x102.
-  outFrame.data[6] = 100;
+  outFrame.data[6] = force09 ? 200 : 100;
   outFrame.data[7] = 0; //not used
 
   logFrameOnChange(outFrame);
@@ -605,8 +608,9 @@ void CHADEMO::sendCANChargingTime()
 
   outFrame.data[0] = 0x00; // Not Used
   outFrame.data[1] = 0xFF; //not using 10 second increment mode
-  outFrame.data[2] = 90; //ask for how long of a charge? It will be forceably stopped if we hit this time
-  outFrame.data[3] = 60; //how long we think the charge will actually take
+  //Same source: 254 minutes allowed and no estimate at all, rather than our 90 and 60.
+  outFrame.data[2] = force09 ? 254 : 90; //ask for how long of a charge? It will be forceably stopped if we hit this time
+  outFrame.data[3] = force09 ? 0 : 60; //how long we think the charge will actually take
   outFrame.data[4] = 0; //not used
   outFrame.data[5] = 0x00; //reserved, and a strict charger may reject a nonzero value
   outFrame.data[6] = 0x0; //not used
