@@ -707,9 +707,16 @@ void loop() {
     //0x108 arrives rarely and matters every time; 0x109 repeats at 100ms, so only a change in
     //what the charger reports is worth a line.
     if (inFrame.id == 0x108) {
-      logLine("0x108 verfuegbar %d V %d A schwelle %d V",
-              inFrame.data[1] + inFrame.data[2] * 256, inFrame.data[3],
-              inFrame.data[4] + inFrame.data[5] * 256);
+      //Also only on change: at ten frames a second this filled the whole ring buffer in a minute
+      //and pushed out the boot line and the state changes, the very lines worth reading.
+      static int lastAvailV = -1, lastAvailA = -1, lastThresh = -1;
+      int availV = inFrame.data[1] + inFrame.data[2] * 256;
+      int availA = inFrame.data[3];
+      int thresh = inFrame.data[4] + inFrame.data[5] * 256;
+      if (availV != lastAvailV || availA != lastAvailA || thresh != lastThresh) {
+        lastAvailV = availV; lastAvailA = availA; lastThresh = thresh;
+        logLine("0x108 verfuegbar %d V %d A schwelle %d V", availV, availA, thresh);
+      }
     } else if (inFrame.id == 0x109) {
       static int lastV = -1, lastA = -1, lastStatus = -1;
       int v = inFrame.data[1] + inFrame.data[2] * 256;
