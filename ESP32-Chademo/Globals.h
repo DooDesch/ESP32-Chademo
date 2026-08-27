@@ -65,6 +65,14 @@ extern bool skipD2;
 //stay zero, and both sides are supposed to fall back to the lower version.
 extern bool force09;
 
+//Feeds the first sequence line into the second input and the other way round. The two input
+//circuits are identical, so swapping the pair at the connector and setting this flag routes d1
+//through the d2 hardware. If the sequence then still runs, that hardware is proven good.
+extern bool swapInputs;
+
+#define D1_PIN (swapInputs ? CHADEMO_IN2 : CHADEMO_IN1)
+#define D2_PIN (swapInputs ? CHADEMO_IN1 : CHADEMO_IN2)
+
 extern uint32_t canFrames;
 extern uint32_t canLastId;
 extern uint32_t canLastMillis;

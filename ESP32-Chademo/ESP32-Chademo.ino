@@ -31,8 +31,9 @@ float lastSavedAH = 0;
 double ampHourAcc = 0;
 double kiloWattHourAcc = 0;
 bool earlyPermission = false;
-bool skipD2 = false;
-bool force09 = false;
+bool skipD2 = true;
+bool force09 = true;
+bool swapInputs = false;
 //Ring buffer, because the box runs without a serial cable: the whole point is that a run at a
 //charger can be read back afterwards from /log.txt instead of being described from memory.
 static char logBuf[6144];
@@ -191,6 +192,9 @@ void setup() {
   String staSSID = prefs.getString("staSSID", "");
   String staPW = prefs.getString("staPW", "");
   earlyPermission = prefs.getBool("early", false);
+  skipD2 = prefs.getBool("skipD2", true);
+  force09 = prefs.getBool("force09", true);
+  swapInputs = prefs.getBool("swapin", false);
   prefs.end();
 
   if (earlyPermission) {
@@ -198,6 +202,8 @@ void setup() {
     overrideStart1 = true;
     Serial.println(F("Early permission on: contact closed, frames start without d1"));
   }
+  logLine("start: protokoll %s, skipD2 %s, eingaenge %s", force09 ? "0.9" : "1.0",
+          skipD2 ? "an" : "aus", swapInputs ? "getauscht" : "normal");
 
   WiFi.mode(staSSID.length() ? WIFI_AP_STA : WIFI_AP);
   WiFi.hostname(HOSTNAME);
@@ -539,9 +545,9 @@ void outputState() {
   Serial.print (F("OUT2"));
   Serial.print (digitalRead(CHADEMO_OUT2) > 0 ? F(":1 ") : F(":0 "));
   Serial.print (F("IN1"));
-  Serial.print (!digitalRead(CHADEMO_IN1) > 0 ? F(":1 ") : F(":0 "));
+  Serial.print (!digitalRead(D1_PIN) > 0 ? F(":1 ") : F(":0 "));
   Serial.print (F("IN2"));
-  Serial.print (!digitalRead(CHADEMO_IN2) > 0 ? F(":1 ") : F(":0 "));
+  Serial.print (!digitalRead(D2_PIN) > 0 ? F(":1 ") : F(":0 "));
   Serial.print (F("OVER1"));
   Serial.print (overrideStart1 > 0 ? F(":1 ") : F(":0 "));
   Serial.print (F("OVER2"));
@@ -580,8 +586,8 @@ void broadcastMessage() {
       json["OVER2"] = overrideStart2;
       json["OUT1"] = digitalRead(CHADEMO_OUT1);
       json["OUT2"] = digitalRead(CHADEMO_OUT2);
-      json["IN1"] = !digitalRead(CHADEMO_IN1);
-      json["IN2"] =!digitalRead(CHADEMO_IN2);
+      json["IN1"] = !digitalRead(D1_PIN);
+      json["IN2"] =!digitalRead(D2_PIN);
 
       size_t len = serializeJson(json, buffer);  // serialize to buffe
       chademoWebServer.getWebSocket().textAll(buffer, len);
@@ -682,7 +688,7 @@ void loop() {
       lastState = st;
       logLine("state %s", st >= 0 && st <= 12 ? STATE_NAMES[st] : "?");
     }
-    int in1 = !digitalRead(CHADEMO_IN1), in2 = !digitalRead(CHADEMO_IN2);
+    int in1 = !digitalRead(D1_PIN), in2 = !digitalRead(D2_PIN);
     if (in1 != lastIn1) { lastIn1 = in1; logLine("d1 %s", in1 ? "aktiv" : "ruhig"); }
     if (in2 != lastIn2) { lastIn2 = in2; logLine("d2 %s", in2 ? "aktiv" : "ruhig"); }
     int out1 = digitalRead(CHADEMO_OUT1), out2 = digitalRead(CHADEMO_OUT2);

@@ -33,13 +33,20 @@
 	<span class="row-name">Schütze ohne Freigabesignal d2</span>
 	<button type="button" id="skipd2" onclick="toggleSkip()">-</button>
 </div>
-<p class="hint">Versuch für eine Säule, die d2 nie schickt. Schliesst erst, wenn die Säule ihre eigene Ausgangsspannung unter 20 V meldet, also nie im Isolationstest. Nach einem Neustart wieder aus.</p>
+<p class="hint">Versuch für eine Säule, die d2 nie schickt. Schliesst erst, wenn die Säule ihre eigene Ausgangsspannung unter 20 V meldet, also nie im Isolationstest.</p>
 
 <h2 class="section">Protokoll</h2>
 <div class="row">
 	<span class="row-name">Als CHAdeMO 0.9 melden statt 1.0</span>
 	<button type="button" id="proto09" onclick="toggleProto()">-</button>
 </div>
+
+<h2 class="section">Eingaenge tauschen</h2>
+<div class="row">
+	<span class="row-name">d1 und d2 vertauscht einlesen</span>
+	<button type="button" id="swapin" onclick="toggleSwap()">-</button>
+</div>
+<p class="hint">Nur zusammen mit vertauschten Adern am Stecker: Pin 2 auf den d2-Optokoppler, Pin 10 auf den d1-Optokoppler. Läuft der Ablauf dann wie sonst, ist die d2-Strecke in Ordnung und die Säule schickt d2 wirklich nicht.</p>
 
 <h2 class="section">Relais</h2>
 <div id="relays"></div>
@@ -102,6 +109,9 @@ function draw(s) {
 	var p = document.getElementById("proto09");
 	p.textContent = s.force09 ? "AN" : "AUS";
 	p.className = s.force09 ? "on" : "";
+	var w = document.getElementById("swapin");
+	w.textContent = s.swapin ? "AN" : "AUS";
+	w.className = s.swapin ? "on" : "";
 	var k = document.getElementById("skipd2");
 	k.textContent = s.skipD2 ? "AN" : "AUS";
 	k.className = s.skipD2 ? "on" : "";
@@ -141,6 +151,11 @@ function poll() {
 function toggleProto() {
 	var on = document.getElementById("proto09").className ? 0 : 1;
 	fetch("/proto09?on=" + on).then(poll);
+}
+
+function toggleSwap() {
+	var on = document.getElementById("swapin").className ? 0 : 1;
+	fetch("/swapin?on=" + on).then(poll);
 }
 
 function toggleSkip() {

@@ -97,6 +97,10 @@ void CHADEMO::resetSequence()
   carStatus.currDeviation = 0;
   carStatus.voltDeviation = 0;
   carStatus.stopRequest = 0;
+  //Without this the next session opens by asking for the current the last one ended on, which the
+  //charger sees as a vehicle demanding power before the insulation test.
+  askingAmps = 0;
+  carStatus.targetCurrent = 0;
   chademoState = STOPPED;
   digitalWrite(CHADEMO_OUT2, LOW);
   Serial.println(F("Sequence reset"));
@@ -115,7 +119,7 @@ void CHADEMO::setBattOverTemp()
 //stuff that should be frequently run (as fast as possible)
 void CHADEMO::loop()
 {
-  if (!digitalRead(CHADEMO_IN1) || overrideStart1) //IN1 goes LOW if we have been plugged into the chademo port
+  if (!digitalRead(D1_PIN) || overrideStart1) //IN1 goes LOW if we have been plugged into the chademo port
   {
     if (insertionTime == 0)
     {
@@ -247,7 +251,7 @@ void CHADEMO::loop()
         //the pack on its terminals while it was still preparing, which it answers with a fault.
         //So wait until its insulation test has actually run and its output has come back down.
         if (evse_status.presentVoltage > 100) insulationSeen = 1;
-        if (!digitalRead(CHADEMO_IN2) || overrideStart2 ||
+        if (!digitalRead(D2_PIN) || overrideStart2 ||
             (skipD2 && insulationSeen && evse_status.presentVoltage < 20
              && (evse_status.status & EVSE_STATUS_CONNLOCK)))
         {
