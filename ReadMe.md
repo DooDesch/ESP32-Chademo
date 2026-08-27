@@ -31,18 +31,41 @@ independent pack measurement. Charge limits come solely from the profile entered
 - 2x contactors rated for the intended DC current
 - LC-Relay-ESP32-4R-A2 board
 - SN65HVD230 CAN transceiver
-- 2x optocoupler for the charge sequence signals
+- 1x optocoupler for charge sequence signal 1
 - 1k pullup resistor
-- 12 V supply for board and contactor coils
+- 12 V supply for the board
+
+### Contactor coils belong on the charger's loop
+
+The charger closes the vehicle contactors itself. Pin 2 (charge sequence signal 1) is the +12 V
+source for the coils and pin 10 (charge sequence signal 2) is their ground leg, which the charger
+switches when it is ready to deliver. A vehicle that powers its coils from its own supply leaves
+that loop dead, and the charger stops after the insulation test.
+
+```
+   Pin 2  (+12 V from the charger)
+      |
+      +---> RY2 (in series, permission only) ---> coil 1 ---+
+                                            ---> coil 2 ---+
+                                                           |
+   Pin 10 (ground leg, closed by the charger)
+```
+
+Pin 10 carries no supply of its own and must not be tied to the board ground, so signal 2 cannot be
+read with the same optocoupler arrangement as signal 1. Above roughly 2 A of total coil current the
+loop drives a small 12 V relay instead, which then switches the local supply to the coils.
+
+RY2 is a disconnect in that loop, not the thing that closes the contactors: closed means the charger
+may close them.
 
 ### Pin map
 
 | Function | GPIO |
 |---|---|
 | Charge permission contact (RY1) | 32 |
-| Contactor coils (RY2) | 33 |
-| Charge sequence signal 1, optocoupler | 34 |
-| Charge sequence signal 2, optocoupler | 35 |
+| Contactor coil permission (RY2) | 33 |
+| Charge sequence signal 1, optocoupler | 27 |
+| Charge sequence signal 2 | 13 |
 | CAN RX / TX | 16 / 17 |
 | Status LED | 2 |
 
