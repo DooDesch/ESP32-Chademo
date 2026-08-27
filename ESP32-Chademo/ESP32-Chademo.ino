@@ -34,6 +34,7 @@ bool earlyPermission = false;
 bool skipD2 = true;
 bool force09 = true;
 bool swapInputs = false;
+bool d2EverSeen = false;
 //Ring buffer, because the box runs without a serial cable: the whole point is that a run at a
 //charger can be read back afterwards from /log.txt instead of being described from memory.
 static char logBuf[6144];
@@ -691,6 +692,7 @@ void loop() {
     int in1 = !digitalRead(D1_PIN), in2 = !digitalRead(D2_PIN);
     if (in1 != lastIn1) { lastIn1 = in1; logLine("d1 %s", in1 ? "aktiv" : "ruhig"); }
     if (in2 != lastIn2) { lastIn2 = in2; logLine("d2 %s", in2 ? "aktiv" : "ruhig"); }
+    if (in2 && !d2EverSeen) { d2EverSeen = true; logLine("d2 gesehen, bypass steht zurueck"); }
     int out1 = digitalRead(CHADEMO_OUT1), out2 = digitalRead(CHADEMO_OUT2);
     if (out1 != lastOut1) { lastOut1 = out1; logLine("RY1 %s", out1 ? "zu" : "auf"); }
     if (out2 != lastOut2) { lastOut2 = out2; logLine("RY2 %s", out2 ? "zu" : "auf"); }

@@ -250,9 +250,11 @@ void CHADEMO::loop()
         //Below 20V is also true before the charger has done anything at all, and closing there put
         //the pack on its terminals while it was still preparing, which it answers with a fault.
         //So wait until its insulation test has actually run and its output has come back down.
+        //A charger that does assert the signal keeps that decision: the bypass only covers one that
+        //never does.
         if (evse_status.presentVoltage > 100) insulationSeen = 1;
         if (!digitalRead(D2_PIN) || overrideStart2 ||
-            (skipD2 && insulationSeen && evse_status.presentVoltage < 20
+            (skipD2 && !d2EverSeen && insulationSeen && evse_status.presentVoltage < 20
              && (evse_status.status & EVSE_STATUS_CONNLOCK)))
         {
           setDelayedState(CLOSE_CONTACTORS, 100);

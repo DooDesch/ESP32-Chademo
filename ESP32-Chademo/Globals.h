@@ -65,6 +65,10 @@ extern bool skipD2;
 //stay zero, and both sides are supposed to fall back to the lower version.
 extern bool force09;
 
+//Set once the second sequence signal has been seen. A charger that asserts it must be allowed to
+//decide when the contactors close, so the bypass above stands down for the rest of the run.
+extern bool d2EverSeen;
+
 //Feeds the first sequence line into the second input and the other way round. The two input
 //circuits are identical, so swapping the pair at the connector and setting this flag routes d1
 //through the d2 hardware. If the sequence then still runs, that hardware is proven good.
