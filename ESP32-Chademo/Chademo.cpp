@@ -11,6 +11,22 @@ template<class T> inline Print &operator <<(Print &obj, T arg) {
 }
 void timestamp();
 
+//Writes a vehicle frame to the log whenever its content changes, so what actually goes on the bus
+//can be read back instead of being reconstructed from the source.
+static void logFrameOnChange(const CANMessage &frame)
+{
+  static uint8_t last[3][8];
+  static bool seen[3] = {false, false, false};
+  int slot = frame.id == 0x100 ? 0 : frame.id == 0x101 ? 1 : frame.id == 0x102 ? 2 : -1;
+  if (slot < 0) return;
+  if (seen[slot] && memcmp(last[slot], frame.data, 8) == 0) return;
+  memcpy(last[slot], frame.data, 8);
+  seen[slot] = true;
+  logLine("sende 0x%03X %02X %02X %02X %02X %02X %02X %02X %02X", frame.id,
+          frame.data[0], frame.data[1], frame.data[2], frame.data[3],
+          frame.data[4], frame.data[5], frame.data[6], frame.data[7]);
+}
+
 CHADEMO::CHADEMO(WebSocketPrint& webSocketPrint) : webSocketPrint { webSocketPrint }
 {
   bStartedCharge = 0;
@@ -566,6 +582,7 @@ void CHADEMO::sendCANBattSpecs()
   outFrame.data[6] = 100;
   outFrame.data[7] = 0; //not used
 
+  logFrameOnChange(outFrame);
   ACAN_ESP32::can.tryToSend(outFrame);
   if (settings.debuggingLevel > 1)
   {
@@ -594,6 +611,7 @@ void CHADEMO::sendCANChargingTime()
   outFrame.data[5] = 0x00; //reserved, and a strict charger may reject a nonzero value
   outFrame.data[6] = 0x0; //not used
   outFrame.data[7] = 0; //not used
+  logFrameOnChange(outFrame);
   ACAN_ESP32::can.tryToSend(outFrame);
   if (settings.debuggingLevel > 1)
   {
@@ -649,6 +667,7 @@ void CHADEMO::sendCANStatus()
       outFrame.data[6] = (uint8_t)chargedRate; //charged rate (change to 100 for use with BMS SoC)
   }
   outFrame.data[7] = 0; //not used
+  logFrameOnChange(outFrame);
   ACAN_ESP32::can.tryToSend(outFrame);
 
   if (settings.debuggingLevel > 1)
