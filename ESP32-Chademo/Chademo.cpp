@@ -192,6 +192,7 @@ void CHADEMO::loop()
     {
       case STARTUP:
         bDoMismatchChecks = 0; //reset it for now
+        insulationSeen = 0;
         chademoState = SEND_INITIAL_PARAMS; //no delay, the charger expects frames within 500ms of d1
         break;
       case SEND_INITIAL_PARAMS:
@@ -223,7 +224,16 @@ void CHADEMO::loop()
         break;
       case WAIT_FOR_BEGIN_CONFIRMATION:
         carStatus.chargingEnabled = 1;
-        if (!digitalRead(CHADEMO_IN2) || overrideStart2) //inverse logic, OPTOs
+        //skipD2 is for a charger that runs the whole sequence but never asserts the second sequence
+        //signal. Guarded on the charger's own reported output: closing while it still stands at its
+        //insulation test voltage would put hundreds of volts of difference across the contactors.
+        //Below 20V is also true before the charger has done anything at all, and closing there put
+        //the pack on its terminals while it was still preparing, which it answers with a fault.
+        //So wait until its insulation test has actually run and its output has come back down.
+        if (evse_status.presentVoltage > 100) insulationSeen = 1;
+        if (!digitalRead(CHADEMO_IN2) || overrideStart2 ||
+            (skipD2 && insulationSeen && evse_status.presentVoltage < 20
+             && (evse_status.status & EVSE_STATUS_CONNLOCK)))
         {
           setDelayedState(CLOSE_CONTACTORS, 100);
         }

@@ -28,6 +28,13 @@
 	<button type="button" onclick="fetch('/resetseq').then(poll)">RESET</button>
 </div>
 
+<h2 class="section">Ohne d2 schliessen</h2>
+<div class="row">
+	<span class="row-name">Schütze ohne Freigabesignal d2</span>
+	<button type="button" id="skipd2" onclick="toggleSkip()">-</button>
+</div>
+<p class="hint">Versuch für eine Säule, die d2 nie schickt. Schliesst erst, wenn die Säule ihre eigene Ausgangsspannung unter 20 V meldet, also nie im Isolationstest. Nach einem Neustart wieder aus.</p>
+
 <h2 class="section">Relais</h2>
 <div id="relays"></div>
 
@@ -86,6 +93,9 @@ function draw(s) {
 		b.disabled = s.active;
 	}
 	document.getElementById("lock").textContent = s.active ? "gesperrt, Ladung laeuft" : "frei";
+	var k = document.getElementById("skipd2");
+	k.textContent = s.skipD2 ? "AN" : "AUS";
+	k.className = s.skipD2 ? "on" : "";
 	var e = document.getElementById("early");
 	e.textContent = s.early ? "AN" : "AUS";
 	e.className = s.early ? "on" : "";
@@ -117,6 +127,11 @@ function poll() {
 	}).then(draw).catch(function () {
 		document.getElementById("lock").textContent = "Firmware zu alt, bitte firmware.bin flashen";
 	});
+}
+
+function toggleSkip() {
+	var on = document.getElementById("skipd2").className ? 0 : 1;
+	fetch("/skipd2?on=" + on).then(poll);
 }
 
 function toggleEarly() {

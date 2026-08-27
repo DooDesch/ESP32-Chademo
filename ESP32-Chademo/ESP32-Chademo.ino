@@ -31,6 +31,7 @@ float lastSavedAH = 0;
 double ampHourAcc = 0;
 double kiloWattHourAcc = 0;
 bool earlyPermission = false;
+bool skipD2 = false;
 //Ring buffer, because the box runs without a serial cable: the whole point is that a run at a
 //charger can be read back afterwards from /log.txt instead of being described from memory.
 static char logBuf[6144];

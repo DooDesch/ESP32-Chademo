@@ -118,7 +118,8 @@ class CHADEMO
     //target values are what we send with periodic frames and can be changed.
     uint8_t askingAmps; //how many amps to ask for. Trends toward targetAmperage
     uint8_t bListenEVSEStatus; //should we pay attention to stop requests and such yet?
-    uint8_t bDoMismatchChecks; //should we be checking for voltage and current mismatches?
+    uint8_t bDoMismatchChecks;
+    uint8_t insulationSeen; //charger has been seen at test voltage and come back down //should we be checking for voltage and current mismatches?
     uint8_t bConnectorLocked; //is the EVSE saying the connector is locked
     uint8_t vMismatchCount; //count # of consecutive voltage mismatches. Don't trigger until we get enough
     uint8_t cMismatchCount; //same but for current

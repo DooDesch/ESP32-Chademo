@@ -155,6 +155,7 @@ void ChademoWebServer::setup()
         json += ",\"busOff\":" + String(canBusOffCount) + ",\"canStatus\":" + String(canStatus);
         json += ",\"active\":" + String(chargeInProgress() ? "true" : "false");
         json += ",\"early\":" + String(earlyPermission ? "true" : "false");
+        json += ",\"skipD2\":" + String(skipD2 ? "true" : "false");
         //Build stamp, so the page can say which firmware is actually running. Two updates were
         //already diagnosed as a wiring fault because an older binary of the same name was flashed.
         json += ",\"version\":\"" + String(__DATE__) + " " + String(__TIME__) + "\"";
@@ -189,6 +190,14 @@ void ChademoWebServer::setup()
 
     server.on("/log.txt", HTTP_GET, [&] (AsyncWebServerRequest *request) {
         request->send(200, "text/plain", logDump());
+    });
+
+    server.on("/skipd2", HTTP_GET, [&] (AsyncWebServerRequest *request) {
+        if (request->hasParam("on")) {
+            skipD2 = request->getParam("on")->value().toInt() != 0;
+            logLine("skipD2 %s", skipD2 ? "an" : "aus");
+        }
+        request->send(200, "application/json", "{\"ok\":true}");
     });
 
     server.on("/resetseq", HTTP_GET, [&] (AsyncWebServerRequest *request) {

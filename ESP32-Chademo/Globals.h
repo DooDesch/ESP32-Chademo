@@ -57,6 +57,10 @@ extern bool overrideStart2;
 //standard order.
 extern bool earlyPermission;
 
+//Closes the contactors without the second sequence signal, only while the charger reports its own
+//output below 20V. For a charger that runs the whole sequence but never asserts d2.
+extern bool skipD2;
+
 extern uint32_t canFrames;
 extern uint32_t canLastId;
 extern uint32_t canLastMillis;
