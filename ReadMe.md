@@ -1,6 +1,8 @@
 # CHAdeMOSoftware
 
-This code will help you add CHAdeMO DC fast charging to your EV, whether it is OEM or DIY.  Currently Untested
+This code will help you add CHAdeMO DC fast charging to your EV, whether it is OEM or DIY.
+
+This fork has charged a pack at a public CHAdeMO charger: 98s pack at 357 V, ABB Terra 54.
 
 🛟 **Need help or found a bug?** Get support at [support.doodesch.de/esp32-chademo](https://support.doodesch.de/esp32-chademo).
 
@@ -20,6 +22,9 @@ Differences to upstream:
   `0x109`, the amp hour and kilowatt hour counters are integrated from those values.
 - No BMS CAN input and no VCU status frame `0x354`, both lived on the removed second bus.
 - WiFi runs as an access point (`ESP32-CHADEMO` / `ChadMeO1`), the web UI is the only operator interface.
+- The contactors are closed by the charger rather than by a relay of ours, so the second sequence
+  signal is not read at all. See the wiring section below, it is the part that is easy to get wrong.
+- The charge target and current ceiling can be changed on the main page during a running session.
 
 **Safety:** the mismatch checks in `Chademo.cpp` now compare the charger against its own numbers.
 They cannot detect a charger reporting wrong values or a welded contactor, and there is no
