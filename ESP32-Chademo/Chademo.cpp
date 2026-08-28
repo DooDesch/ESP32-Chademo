@@ -581,9 +581,10 @@ void CHADEMO::sendCANBattSpecs()
   outFrame.data[1] = 0x00; // Not Used
   outFrame.data[2] = 0x00; // Not Used
   outFrame.data[3] = 0x00; // Not Used
-  //ZombieVerter, which charges at real chargers, announces the maximum as target plus 40V rather
-  //than a separately configured number, and a reference constant of 200.
-  uint16_t maxVolts = force09 ? carStatus.targetVoltage + 40 : settings.maxChargeVoltage;
+  //This is the voltage the charger takes as its own cut-off threshold, so it carries the pack
+  //limit from the profile. Deriving it from the target instead, as ZombieVerter does, sets that
+  //threshold tens of volts above what the profile calls safe for the pack.
+  uint16_t maxVolts = settings.maxChargeVoltage;
   outFrame.data[4] = lowByte(maxVolts);
   outFrame.data[5] = highByte(maxVolts);
   //CHAdeMO 1.0 fixes this field at 100 percent; the real state of charge goes out in 0x102.
