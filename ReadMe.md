@@ -59,7 +59,11 @@ Signal 1 supplies up to 2 A, which covers two 12 V coils drawing about 1 A toget
 loop drives a small 12 V relay instead, which then switches the local supply to the coils.
 
 RY2 is a disconnect in that loop, not the thing that closes the contactors: closed means the charger
-may close them.
+may close them. It therefore closes early, right after the charge permission contact, and has to be
+closed before the charger switches the ground leg. A firmware that waits for the second sequence
+signal before closing it would deadlock, since the charger only switches into a circuit that is
+already complete. Current is still only requested once the insulation test has run and the output
+has come back down.
 
 ### Pin map
 

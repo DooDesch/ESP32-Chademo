@@ -147,21 +147,19 @@ void ChademoWebServer::setup()
             if (i < 3) json += ",";
         }
         //The optocouplers pull the input low while the charge sequence line carries voltage.
-        json += "],\"in1\":" + String(!digitalRead(D1_PIN) ? "true" : "false");
-        json += ",\"in2\":" + String(!digitalRead(D2_PIN) ? "true" : "false");
+        json += "],\"in1\":" + String(!digitalRead(CHADEMO_IN1) ? "true" : "false");
+        json += ",\"in2\":" + String(!digitalRead(CHADEMO_IN2) ? "true" : "false");
         json += ",\"frames\":" + String(canFrames);
         json += ",\"lastId\":" + String(canLastId);
         json += ",\"age\":" + String(canFrames ? millis() - canLastMillis : 0);
         json += ",\"busOff\":" + String(canBusOffCount) + ",\"canStatus\":" + String(canStatus);
         json += ",\"active\":" + String(chargeInProgress() ? "true" : "false");
         json += ",\"early\":" + String(earlyPermission ? "true" : "false");
-        json += ",\"skipD2\":" + String(skipD2 ? "true" : "false");
         json += ",\"force09\":" + String(force09 ? "true" : "false");
-        json += ",\"swapin\":" + String(swapInputs ? "true" : "false");
         //Build stamp, so the page can say which firmware is actually running. Two updates were
         //already diagnosed as a wiring fault because an older binary of the same name was flashed.
         json += ",\"version\":\"" + String(__DATE__) + " " + String(__TIME__) + "\"";
-        json += ",\"in1pin\":" + String(D1_PIN) + ",\"in2pin\":" + String(D2_PIN);
+        json += ",\"in1pin\":" + String(CHADEMO_IN1) + ",\"in2pin\":" + String(CHADEMO_IN2);
         //Raw level of every pin an input could sit on, so a wiring question can be looked at
         //instead of guessed at. A pin with a pullup and nothing attached reads 1.
         json += ",\"pins\":{";
@@ -194,18 +192,6 @@ void ChademoWebServer::setup()
         request->send(200, "text/plain", logDump());
     });
 
-    server.on("/skipd2", HTTP_GET, [&] (AsyncWebServerRequest *request) {
-        if (request->hasParam("on")) {
-            skipD2 = request->getParam("on")->value().toInt() != 0;
-            logLine("skipD2 %s", skipD2 ? "an" : "aus");
-            Preferences prefs;
-            prefs.begin("wifi", false);
-            prefs.putBool("skipD2", skipD2);
-            prefs.end();
-        }
-        request->send(200, "application/json", "{\"ok\":true}");
-    });
-
     server.on("/proto09", HTTP_GET, [&] (AsyncWebServerRequest *request) {
         if (request->hasParam("on")) {
             force09 = request->getParam("on")->value().toInt() != 0;
@@ -213,18 +199,6 @@ void ChademoWebServer::setup()
             Preferences prefs;
             prefs.begin("wifi", false);
             prefs.putBool("force09", force09);
-            prefs.end();
-        }
-        request->send(200, "application/json", "{\"ok\":true}");
-    });
-
-    server.on("/swapin", HTTP_GET, [&] (AsyncWebServerRequest *request) {
-        if (request->hasParam("on")) {
-            swapInputs = request->getParam("on")->value().toInt() != 0;
-            logLine("eingaenge %s", swapInputs ? "getauscht" : "normal");
-            Preferences prefs;
-            prefs.begin("wifi", false);
-            prefs.putBool("swapin", swapInputs);
             prefs.end();
         }
         request->send(200, "application/json", "{\"ok\":true}");

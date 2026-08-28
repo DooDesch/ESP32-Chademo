@@ -119,7 +119,7 @@ void CHADEMO::setBattOverTemp()
 //stuff that should be frequently run (as fast as possible)
 void CHADEMO::loop()
 {
-  if (!digitalRead(D1_PIN) || overrideStart1) //IN1 goes LOW if we have been plugged into the chademo port
+  if (!digitalRead(CHADEMO_IN1) || overrideStart1) //IN1 goes LOW if we have been plugged into the chademo port
   {
     if (insertionTime == 0)
     {
@@ -244,18 +244,17 @@ void CHADEMO::loop()
         break;
       case WAIT_FOR_BEGIN_CONFIRMATION:
         carStatus.chargingEnabled = 1;
-        //skipD2 is for a charger that runs the whole sequence but never asserts the second sequence
-        //signal. Guarded on the charger's own reported output: closing while it still stands at its
-        //insulation test voltage would put hundreds of volts of difference across the contactors.
-        //Below 20V is also true before the charger has done anything at all, and closing there put
-        //the pack on its terminals while it was still preparing, which it answers with a fault.
-        //So wait until its insulation test has actually run and its output has come back down.
-        //A charger that does assert the signal keeps that decision: the bypass only covers one that
-        //never does.
+        //OUT2 is a permission inside the charger's own coil circuit, not the thing that closes the
+        //contactors: the charger closes them by pulling the second sequence line to ground. So it
+        //has to be closed before that happens, or the charger switches into an open circuit and
+        //stops. Closing it early is safe precisely because it energises nothing on its own.
+        digitalWrite(CHADEMO_OUT2, HIGH);
+        //Current is only requested once the insulation test has run and the output has come back
+        //down, so the charger never sees a demand while it is still testing. Below 20V is also true
+        //before it has done anything at all, hence the test voltage has to have been seen first.
         if (evse_status.presentVoltage > 100) insulationSeen = 1;
-        if (!digitalRead(D2_PIN) || overrideStart2 ||
-            (skipD2 && !d2EverSeen && insulationSeen && evse_status.presentVoltage < 20
-             && (evse_status.status & EVSE_STATUS_CONNLOCK)))
+        if (overrideStart2 || (insulationSeen && evse_status.presentVoltage < 20
+            && (evse_status.status & EVSE_STATUS_CONNLOCK)))
         {
           setDelayedState(CLOSE_CONTACTORS, 100);
         }
