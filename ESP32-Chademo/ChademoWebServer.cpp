@@ -204,6 +204,39 @@ void ChademoWebServer::setup()
         request->send(200, "application/json", "{\"ok\":true}");
     });
 
+    //Deltas rather than absolute values: the page can be a poll behind, and two presses on a stale
+    //reading would otherwise silently undo each other.
+    server.on("/live", HTTP_GET, [&] (AsyncWebServerRequest *request) {
+        int volts = settings.targetChargeVoltage;
+        int amps = settings.maxChargeAmperage;
+        if (request->hasParam("dv")) {
+            int want = volts + request->getParam("dv")->value().toInt();
+            //The upper bound is the pack limit from the settings page. Above it the charger would be
+            //asked to push past what the profile calls safe for this pack.
+            if (want < 50 || want > settings.maxChargeVoltage) {
+                logLine("zielspannung %d V abgelehnt, erlaubt 50 bis %d V", want, settings.maxChargeVoltage);
+            } else {
+                volts = want;
+            }
+        }
+        if (request->hasParam("da")) {
+            int want = amps + request->getParam("da")->value().toInt();
+            if (want < 0 || want > 125) {
+                logLine("ladestrom %d A abgelehnt, erlaubt 0 bis 125 A", want);
+            } else {
+                amps = want;
+            }
+        }
+        if (volts != settings.targetChargeVoltage || amps != settings.maxChargeAmperage) {
+            logLine("live: ziel %d V, max %d A", volts, amps);
+            applyLiveLimits(volts, amps);
+        }
+        String json = "{\"volt\":" + String(settings.targetChargeVoltage);
+        json += ",\"amps\":" + String(settings.maxChargeAmperage);
+        json += ",\"maxvolt\":" + String(settings.maxChargeVoltage) + "}";
+        request->send(200, "application/json", json);
+    });
+
     server.on("/resetseq", HTTP_GET, [&] (AsyncWebServerRequest *request) {
         resetSequence();
         request->send(200, "application/json", "{\"ok\":true}");

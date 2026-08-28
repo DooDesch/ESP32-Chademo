@@ -278,6 +278,16 @@ void resetSequence()
   chademo.resetSequence();
 }
 
+void applyLiveLimits(uint16_t volts, uint8_t amps)
+{
+  settings.targetChargeVoltage = volts;
+  settings.maxChargeAmperage = amps;
+  chademo.setTargetVoltage(volts);
+  //Set rather than clamp, so lowering the ceiling mid charge actually brings the request down
+  //instead of waiting for the taper. The ramp caps itself against what the charger offers.
+  chademo.setTargetAmperage(amps);
+}
+
 //Manual relay control, refused while a charge sequence owns the outputs.
 bool diagSetRelay(int index, bool on)
 {

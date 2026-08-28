@@ -267,3 +267,16 @@ form div {
 label input {
     margin-left: 20px;
 }
+
+.stepper {
+	display: flex;
+	gap: 4px;
+	margin-top: 6px;
+}
+
+.stepper button {
+	flex: 1;
+	padding: 10px 0;
+	font-size: 15px;
+	min-width: 44px;
+}

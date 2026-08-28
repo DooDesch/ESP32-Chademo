@@ -215,3 +215,18 @@ function onMessage(json) {
 	// remove the link from the DOM
 	document.body.removeChild(event.target);
   }
+
+
+//Live limits. The board answers every call with the values it actually applied, so a rejected step
+//shows the unchanged number instead of a value the box never took.
+function live(q) {
+	fetch("/live" + (q ? "?" + q : ""))
+		.then(function (r) { return r.json(); })
+		.then(function (s) {
+			document.getElementById("liveVolt").textContent = s.volt;
+			document.getElementById("liveAmps").textContent = s.amps;
+		})
+		.catch(function (e) { console.error("live limits", e); });
+}
+
+live("");

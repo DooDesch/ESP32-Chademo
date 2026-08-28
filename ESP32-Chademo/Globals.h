@@ -74,6 +74,11 @@ void updateTargetAV();
 bool chargeInProgress();
 bool diagRelayState(int index);
 void resetSequence();
+
+//Applies a new target voltage and current ceiling to a session that is already running. The state
+//machine reads the setting for its termination check and the car status for the frames it sends,
+//so both have to move together.
+void applyLiveLimits(uint16_t volts, uint8_t amps);
 void logLine(const char *fmt, ...);
 String logDump();
 bool diagSetRelay(int index, bool on);

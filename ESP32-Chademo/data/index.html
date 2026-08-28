@@ -40,6 +40,31 @@
 		<div id="container-soc" class="chart-container"></div>
 	</div>
 
+	<h2 class="section">Live</h2>
+	<div class="cards">
+		<div class="card">
+			<span class="card-label">Ladeschlussspannung</span>
+			<span class="card-value"><span id="liveVolt">-</span> V</span>
+			<div class="stepper">
+				<button type="button" onclick="live('dv=-5')">-5</button>
+				<button type="button" onclick="live('dv=-1')">-1</button>
+				<button type="button" onclick="live('dv=1')">+1</button>
+				<button type="button" onclick="live('dv=5')">+5</button>
+			</div>
+		</div>
+		<div class="card">
+			<span class="card-label">Max Ladestrom</span>
+			<span class="card-value"><span id="liveAmps">-</span> A</span>
+			<div class="stepper">
+				<button type="button" onclick="live('da=-5')">-5</button>
+				<button type="button" onclick="live('da=-1')">-1</button>
+				<button type="button" onclick="live('da=1')">+1</button>
+				<button type="button" onclick="live('da=5')">+5</button>
+			</div>
+		</div>
+	</div>
+	<p class="hint">Wirkt sofort, auch mitten im Laden. Nicht gespeichert, nach einem Neustart gelten wieder die Werte der Settings-Seite.</p>
+
 	<h2 class="section">EVSE</h2>
 	<div class="cards">
 		<div class="card"><span class="card-label">Max Voltage</span><span class="card-value"><span id="evseVoltage">-</span> V</span></div>
