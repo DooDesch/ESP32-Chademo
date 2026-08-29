@@ -120,6 +120,7 @@ class CHADEMO
     uint8_t bListenEVSEStatus; //should we pay attention to stop requests and such yet?
     uint8_t bDoMismatchChecks;
     uint8_t insulationSeen; //charger has been seen at test voltage and come back down //should we be checking for voltage and current mismatches?
+    uint8_t taperStarted; //target voltage has been reached once, so the current may only fall from here
     uint8_t bConnectorLocked; //is the EVSE saying the connector is locked
     uint8_t vMismatchCount; //count # of consecutive voltage mismatches. Don't trigger until we get enough
     uint8_t cMismatchCount; //same but for current

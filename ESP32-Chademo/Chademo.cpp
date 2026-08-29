@@ -78,6 +78,8 @@ void CHADEMO::setTargetAmperage(uint8_t t_amp)
 
 void CHADEMO::setTargetVoltage(uint16_t t_volt)
 {
+  //Raising the target puts the pack below it again, so the constant current phase is allowed back.
+  if (t_volt > carStatus.targetVoltage) taperStarted = 0;
   carStatus.targetVoltage = t_volt;
 }
 
@@ -97,6 +99,7 @@ void CHADEMO::resetSequence()
   carStatus.currDeviation = 0;
   carStatus.voltDeviation = 0;
   carStatus.stopRequest = 0;
+  taperStarted = 0;
   //Without this the next session opens by asking for the current the last one ended on, which the
   //charger sees as a vehicle demanding power before the insulation test.
   askingAmps = 0;
@@ -151,6 +154,7 @@ void CHADEMO::loop()
           carStatus.notParked = 0;
           carStatus.stopRequest = 0;
           carStatus.voltDeviation = 0;
+          taperStarted = 0;
           bChademo10Protocol = force09 ? 0 : 1;
         }
       }
@@ -213,6 +217,7 @@ void CHADEMO::loop()
       case STARTUP:
         bDoMismatchChecks = 0; //reset it for now
         insulationSeen = 0;
+        taperStarted = 0;
         chademoState = SEND_INITIAL_PARAMS; //no delay, the charger expects frames within 500ms of d1
         break;
       case SEND_INITIAL_PARAMS:
@@ -372,7 +377,11 @@ void CHADEMO::doProcessing()
     {
       if (evse_status.presentVoltage > settings.targetChargeVoltage - 1) //All initializations complete and we're running.We've reached charging target
       {
-       
+        //Constant voltage from here on. Every step down lets the voltage sag below the target
+        //again, so raising the current back up on that sag turns the taper into an oscillation
+        //that never settles. A pack at its target voltage accepts less current as it fills, so
+        //the request only ever has to fall.
+        taperStarted = 1;
         if (settings.minChargeAmperage == 0 || carStatus.targetCurrent < settings.minChargeAmperage) {
           //putt SOC, ampHours and kiloWattHours reset in here once we actually reach the termination point.
           settings.ampHours = 0; // Amp hours count up as used
@@ -381,7 +390,7 @@ void CHADEMO::doProcessing()
         } else
           carStatus.targetCurrent--;  //Taper. Actual decrease occurs in sendChademoStatus
       }
-      else //Only adjust upward if we have previous adjusted downward and do not exceed max amps
+      else if (!taperStarted) //Constant current, still climbing towards the target voltage
       {
         if (carStatus.targetCurrent < settings.maxChargeAmperage) carStatus.targetCurrent++;
       }
