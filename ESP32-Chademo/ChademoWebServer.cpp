@@ -292,4 +292,8 @@ void ChademoWebServer::fromJson(EESettings& settings, JsonObject &doc) {
     settings.debuggingLevel = doc["debuggingLevel"];
     settings.currentMissmatch = doc["currentMissmatch"];
 
+    //The settings page writes the struct, but the target the frames carry and the taper state live
+    //in the state machine. Without this a limit saved during a session reached the termination
+    //check and nothing else, so the charger kept being told the target from before the edit.
+    applyLiveLimits(settings.targetChargeVoltage, settings.maxChargeAmperage);
 }
