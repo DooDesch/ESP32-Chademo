@@ -735,13 +735,20 @@ void loop() {
         lastProto = inFrame.data[0];
         logLine("0x109 protokoll %d", lastProto);
       }
-      static int lastV = -1, lastA = -1, lastStatus = -1;
+      //Status, voltage and the charger's remaining time are logged on every change. The current
+      //is not: a charger regulating around 20A jitters by an amp on nearly every frame, which
+      //filled the ring buffer and pushed the start of the session out before it ended. It gets a
+      //line when it moves by 3A or more, and every line older than 10s gets a fresh one anyway.
+      static int lastV = -1, lastA = -100, lastStatus = -1, lastRest = -1;
+      static uint32_t lastLine109 = 0;
       int v = inFrame.data[1] + inFrame.data[2] * 256;
       int a = inFrame.data[3];
       int status = inFrame.data[5];
-      if (v != lastV || a != lastA || status != lastStatus) {
-        lastV = v; lastA = a; lastStatus = status;
-        logLine("0x109 %d V %d A status 0x%02X", v, a, status);
+      int rest = inFrame.data[6] < 0xFF ? inFrame.data[6] * 10 : inFrame.data[7] * 60;
+      if (v != lastV || status != lastStatus || rest != lastRest || abs(a - lastA) >= 3
+          || millis() - lastLine109 >= 10000) {
+        lastV = v; lastA = a; lastStatus = status; lastRest = rest; lastLine109 = millis();
+        logLine("0x109 %d V %d A status 0x%02X rest %d s", v, a, status, rest);
       }
     } else {
       static uint32_t lastOther = 0;

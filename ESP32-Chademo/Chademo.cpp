@@ -312,6 +312,7 @@ void CHADEMO::loop()
         break;
       case FAULTED:
         Serial.println(F("CAR: fault!"));
+        logLine("stopp: FAULTED");
         webSocketPrint.message(F("CAR: fault!"));
         chademoState = CEASE_CURRENT;
         //digitalWrite(OUT2, LOW);
@@ -348,6 +349,7 @@ void CHADEMO::doProcessing()
     //this is BAD news. We can't do the normal cease current procedure because the EVSE seems to be unresponsive.
     Serial.println(F("EVSE comm fault! Commencing emergency shutdown!"));
     webSocketPrint.message(F("EVSE comm fault! Commencing emergency shutdown!"));
+    logLine("stopp: seit %lu ms kein 0x109", (unsigned long)(CurrentMillis - lastCommTime));
     //yes, this isn't ideal - this will open the contactor and send the shutdown signal. It's better than letting the EVSE
     //potentially run out of control.
     chademoState = OPEN_CONTACTOR;
@@ -364,6 +366,7 @@ void CHADEMO::doProcessing()
       {
         Serial.println(F("Over voltage fault!"));
         webSocketPrint.message(F("Over voltage fault!"));
+        logLine("stopp: Spannung %d V ueber max %d V", (int)Voltage, settings.maxChargeVoltage);
         carStatus.battOverVolt = 1;
         chademoState = CEASE_CURRENT;
       }
@@ -386,6 +389,8 @@ void CHADEMO::doProcessing()
           //putt SOC, ampHours and kiloWattHours reset in here once we actually reach the termination point.
           settings.ampHours = 0; // Amp hours count up as used
           settings.kiloWattHours = 0; // Kilowatt Hours count up as used.
+          logLine("stopp: Ziel %d V erreicht, Strom %d A unter min %d A", settings.targetChargeVoltage,
+                  carStatus.targetCurrent, settings.minChargeAmperage);
           chademoState = CEASE_CURRENT;  //Terminate charging
         } else
           carStatus.targetCurrent--;  //Taper. Actual decrease occurs in sendChademoStatus
@@ -441,6 +446,7 @@ void CHADEMO::handleCANFrame(CANMessage &frame)
         Serial.print(F("EVSE can't provide needed voltage. Aborting."));
         Serial.println(evse_params.availVoltage);
         webSocketPrint.message("EVSE can't provide needed voltage (" + String(evse_params.availVoltage) + "). Aborting.");
+        logLine("stopp: Station bietet nur %d V", evse_params.availVoltage);
         chademoState = CEASE_CURRENT;
       }
     }
@@ -493,6 +499,7 @@ void CHADEMO::handleCANFrame(CANMessage &frame)
           webSocketPrint.message("Voltage mismatch! Aborting! Reported:" + String(evse_status.presentVoltage) + "  Measured: " + String(Voltage));
 
           carStatus.voltDeviation = 1;
+          logLine("stopp: Spannung weicht ab, Station %d V, wir %d V", evse_status.presentVoltage, (int)Voltage);
           chademoState = CEASE_CURRENT;
         }
       }
@@ -513,6 +520,7 @@ void CHADEMO::handleCANFrame(CANMessage &frame)
           webSocketPrint.message("Current mismatch! Aborting! Reported:" + String(evse_status.presentCurrent) + "  Measured: " + String((Current * -1.0)));
 
           carStatus.currDeviation = 1;
+          logLine("stopp: Strom weicht ab, Station %d A, wir %d A", evse_status.presentCurrent, (int)(Current * -1.0));
           chademoState = CEASE_CURRENT;
         }
       }
@@ -544,7 +552,10 @@ void CHADEMO::handleCANFrame(CANMessage &frame)
         Serial.println(F(" Abort."));
         webSocketPrint.message("EVSE:fault code " + evse_status.status);
 
-        if (chademoState == RUNNING) chademoState = CEASE_CURRENT;
+        if (chademoState == RUNNING) {
+          logLine("stopp: Fehlerbits der Station, status 0x%02X", evse_status.status);
+          chademoState = CEASE_CURRENT;
+        }
       }
     }
     else faultCount = 0;
@@ -557,6 +568,8 @@ void CHADEMO::handleCANFrame(CANMessage &frame)
         {
           Serial.println(F("EVSE:stop charging."));
           webSocketPrint.message(F("EVSE:stop charging."));
+          logLine("stopp: Station setzt Stoppbit, status 0x%02X, Restzeit %d s", evse_status.status,
+                  evse_status.remainingChargeSeconds);
 
           chademoState = CEASE_CURRENT;
         }
@@ -566,6 +579,7 @@ void CHADEMO::handleCANFrame(CANMessage &frame)
         {
           Serial.println(F("EVSE:time elapsed..Ending"));
           webSocketPrint.message(F("EVSE:time elapsed..Ending"));
+          logLine("stopp: Restzeit der Station abgelaufen");
           chademoState = CEASE_CURRENT;
         }
       }
